@@ -42,7 +42,6 @@ fun PeyyaApp(
         Box(modifier = Modifier.fillMaxSize()) {
             TripScreen(
                 state = state,
-                onFamilyNameChange = viewModel::updateFamilyName,
                 onToggleStop = viewModel::toggleStop,
                 onStartRoute = viewModel::startRoute,
                 onMarkArrived = viewModel::markArrived,

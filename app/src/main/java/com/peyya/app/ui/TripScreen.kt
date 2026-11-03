@@ -6,9 +6,16 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
+fun isCarLayout(): Boolean {
+    val config = LocalConfiguration.current
+    val isCarUiMode =
+        (config.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_CAR
+    return isCarUiMode || config.screenWidthDp >= 960
+}
+
+@Composable
 fun TripScreen(
     state: TripUiState,
-    onFamilyNameChange: (String) -> Unit,
     onToggleStop: (String, Boolean) -> Unit,
     onStartRoute: () -> Unit,
     onMarkArrived: () -> Unit,
@@ -17,13 +24,7 @@ fun TripScreen(
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
 ) {
-    val landscape =
-        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    // Keep signature for family name edits on phone; car uses glance-only names.
-    @Suppress("UNUSED_PARAMETER")
-    val unusedFamilyEditor = onFamilyNameChange
-
-    if (landscape) {
+    if (isCarLayout()) {
         CarTripScreen(
             state = state,
             onToggleStop = onToggleStop,
@@ -47,7 +48,3 @@ fun TripScreen(
         )
     }
 }
-
-@Composable
-fun isCarLayout(): Boolean =
-    LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
