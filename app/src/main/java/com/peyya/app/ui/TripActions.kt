@@ -35,14 +35,26 @@ fun resolveTripActions(
         onPrimary = onMarkArrived,
         primaryIsDemo = state.mockMode,
     )
-    is TripPhase.Arrived -> TripActions(
-        primaryLabel = "시동 걸기",
-        primaryEnabled = true,
-        onPrimary = onIgnition,
-        primaryIsDemo = state.mockMode,
-        secondaryLabel = "다음 장소 건너뛰기",
-        onSecondary = onSkipNext,
-    )
+    is TripPhase.Arrived -> {
+        if (state.mockMode) {
+            TripActions(
+                primaryLabel = "시동 걸기",
+                primaryEnabled = true,
+                onPrimary = onIgnition,
+                primaryIsDemo = true,
+                secondaryLabel = "다음 장소 건너뛰기",
+                onSecondary = onSkipNext,
+            )
+        } else {
+            TripActions(
+                primaryLabel = null,
+                primaryEnabled = false,
+                onPrimary = {},
+                secondaryLabel = "다음 장소 건너뛰기",
+                onSecondary = onSkipNext,
+            )
+        }
+    }
     is TripPhase.AwaitingNext -> TripActions(
         primaryLabel = "안내 시작",
         primaryEnabled = true,
