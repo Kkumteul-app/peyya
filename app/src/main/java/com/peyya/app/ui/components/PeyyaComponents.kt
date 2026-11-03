@@ -427,7 +427,7 @@ fun DemoBadge(visible: Boolean, onDark: Boolean = false) {
     Text(
         "데모",
         color = fg,
-        fontSize = if (onDark) 14.sp else 12.sp,
+        fontSize = if (onDark) 18.sp else 12.sp,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
             .border(1.dp, line, RoundedCornerShape(6.dp))
