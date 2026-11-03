@@ -201,7 +201,8 @@ fun DemoBadge(visible: Boolean, onDark: Boolean = false) {
     Text(
         "데모",
         color = fg,
-        style = MaterialTheme.typography.labelMedium,
+        fontSize = if (onDark) 14.sp else 12.sp,
+        fontWeight = FontWeight.Bold,
         modifier = Modifier
             .border(1.dp, line, RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp),
