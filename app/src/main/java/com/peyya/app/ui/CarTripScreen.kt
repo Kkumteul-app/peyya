@@ -2,7 +2,6 @@ package com.peyya.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Replay
@@ -39,18 +39,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.peyya.app.domain.AgeBand
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
+import com.peyya.app.ui.components.CarOutlinedCta
+import com.peyya.app.ui.components.CarStopSelectRow
+import com.peyya.app.ui.components.CarStopTimelineRow
 import com.peyya.app.ui.components.DemoBadge
 import com.peyya.app.ui.components.PrimaryCta
-import com.peyya.app.ui.components.SecondaryCta
-import com.peyya.app.ui.components.StopThumb
+import com.peyya.app.ui.components.StopState
 import com.peyya.app.ui.theme.CarBg
 import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.CarCard
@@ -60,7 +60,6 @@ import com.peyya.app.ui.theme.CarLineStrong
 import com.peyya.app.ui.theme.CarPanel
 import com.peyya.app.ui.theme.CarText
 import com.peyya.app.ui.theme.CarTextSub
-import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.ui.theme.PeyyaDanger
 import com.peyya.app.viewmodel.TripUiState
 
@@ -78,14 +77,9 @@ fun CarTripScreen(
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
     )
-    val (title, subtitle) = heroCopy(state)
-    val focusStop = when (val p = state.phase) {
-        is TripPhase.Navigating -> state.trip.stops.firstOrNull { it.id == p.stopId }
-        is TripPhase.Arrived -> state.trip.stops.firstOrNull { it.id == p.stopId }
-        is TripPhase.AwaitingNext -> state.trip.stops.firstOrNull { it.id == p.nextStopId }
-        else -> state.trip.selectedStops().firstOrNull()
-    }
+    val (title, _) = heroCopy(state)
     val showVoice = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
+    val addressLine = carAddressLine(state)
     var menuExpanded by remember { mutableStateOf(false) }
     var showReset by remember { mutableStateOf(false) }
 
@@ -95,19 +89,19 @@ fun CarTripScreen(
             .background(CarBg)
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
-        MapPane(
+        RouteTimelinePane(
             modifier = Modifier
-                .weight(1.35f)
+                .width(440.dp)
                 .fillMaxHeight(),
-            mock = state.mockMode,
-            routeTitle = state.trip.title,
+            state = state,
+            onToggleStop = onToggleStop,
         )
         Column(
             modifier = Modifier
-                .weight(0.9f)
+                .weight(1f)
                 .fillMaxHeight()
                 .background(CarPanel)
-                .padding(22.dp),
+                .padding(horizontal = 56.dp, vertical = 48.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -117,10 +111,8 @@ fun CarTripScreen(
                 Text(
                     state.phase.labelKo(),
                     color = CarBrandLight,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
                 )
                 Box {
                     IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(64.dp)) {
@@ -133,7 +125,7 @@ fun CarTripScreen(
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text("일정 처음부터 다시") },
+                            text = { Text("일정 처음부터 다시", fontSize = 18.sp) },
                             onClick = {
                                 menuExpanded = false
                                 showReset = true
@@ -142,26 +134,41 @@ fun CarTripScreen(
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(title, color = CarText, style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
-            Text(subtitle, color = CarDim, style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(14.dp))
+            Text(
+                title,
+                color = CarText,
+                style = MaterialTheme.typography.displaySmall,
+            )
+            if (addressLine != null) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    addressLine,
+                    color = CarTextSub,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
             if (showVoice) {
+                Spacer(Modifier.height(36.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .background(CarCard)
-                        .border(1.dp, PeyyaBrand, RoundedCornerShape(14.dp))
-                        .padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
+                        .padding(start = 24.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.VolumeUp,
+                        contentDescription = null,
+                        tint = CarBrandLight,
+                        modifier = Modifier.size(28.dp),
+                    )
                     Text(
-                        state.lastSpoken,
+                        "「${state.lastSpoken}」",
                         color = CarText,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(
@@ -178,44 +185,6 @@ fun CarTripScreen(
                         )
                     }
                 }
-                Spacer(Modifier.height(12.dp))
-            }
-            focusStop?.let { stop ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(CarCard)
-                        .border(1.dp, CarLine, RoundedCornerShape(14.dp))
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    StopThumb(stop.id, Modifier.size(72.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(stop.name, color = CarText, style = MaterialTheme.typography.titleMedium)
-                        Text(stop.address, color = CarDim, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-            }
-            if (state.phase is TripPhase.Idle) {
-                Text("경유지 (탭하여 선택)", color = CarDim, style = MaterialTheme.typography.labelMedium)
-                Spacer(Modifier.height(6.dp))
-                state.trip.stops.forEach { stop ->
-                    Text(
-                        text = "${if (stop.selected) "✓" else "○"}  ${stop.name}",
-                        color = if (stop.selected) CarText else CarDim,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(CarCard)
-                            .clickable { onToggleStop(stop.id, !stop.selected) }
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                }
             }
             Spacer(Modifier.weight(1f))
             val notice = state.notice
@@ -224,116 +193,220 @@ fun CarTripScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
                         Icons.Rounded.Info,
                         contentDescription = null,
                         tint = CarTextSub,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(22.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
                     Text(notice, color = CarTextSub, fontSize = 18.sp)
                 }
             }
             val primaryLabel = actions.primaryLabel
-            if (primaryLabel != null) {
-                PrimaryCta(
-                    label = primaryLabel,
-                    enabled = actions.primaryEnabled,
-                    onClick = actions.onPrimary,
-                    demo = actions.primaryIsDemo,
-                )
+            val secondaryLabel = actions.secondaryLabel
+            val onSecondary = actions.onSecondary
+            when {
+                primaryLabel != null && secondaryLabel != null && onSecondary != null -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        PrimaryCta(
+                            label = primaryLabel,
+                            enabled = actions.primaryEnabled,
+                            onClick = actions.onPrimary,
+                            demo = actions.primaryIsDemo,
+                            modifier = Modifier.weight(2f),
+                            height = 84.dp,
+                            corner = 20.dp,
+                            textSize = 26.sp,
+                            textWeight = FontWeight.ExtraBold,
+                        )
+                        CarOutlinedCta(
+                            label = secondaryLabel,
+                            onClick = onSecondary,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                primaryLabel != null -> {
+                    PrimaryCta(
+                        label = primaryLabel,
+                        enabled = actions.primaryEnabled,
+                        onClick = actions.onPrimary,
+                        demo = actions.primaryIsDemo,
+                        height = 84.dp,
+                        corner = 20.dp,
+                        textSize = 26.sp,
+                        textWeight = FontWeight.ExtraBold,
+                    )
+                }
+                secondaryLabel != null && onSecondary != null -> {
+                    CarOutlinedCta(
+                        label = secondaryLabel,
+                        onClick = onSecondary,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
-            if (actions.secondaryLabel != null && actions.onSecondary != null) {
-                Spacer(Modifier.height(8.dp))
-                SecondaryCta(
-                    label = actions.secondaryLabel,
-                    onClick = actions.onSecondary,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "${state.family.familyName} · ${state.family.members.joinToString(" · ") { it.name }}",
-                color = CarDim,
-                style = MaterialTheme.typography.bodyMedium,
-            )
         }
     }
 
     if (showReset) {
         AlertDialog(
             onDismissRequest = { showReset = false },
-            title = { Text("일정을 처음부터 다시 할까요?") },
-            text = { Text("지금까지 진행한 루트 기록이 지워집니다.") },
+            title = { Text("일정을 처음부터 다시 할까요?", fontSize = 20.sp) },
+            text = { Text("지금까지 진행한 루트 기록이 지워집니다.", fontSize = 18.sp) },
             confirmButton = {
                 TextButton(onClick = { showReset = false; onResetTrip() }) {
-                    Text("다시 하기", color = PeyyaDanger)
+                    Text("다시 하기", color = PeyyaDanger, fontSize = 18.sp)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showReset = false }) { Text("취소") }
+                TextButton(onClick = { showReset = false }) {
+                    Text("취소", fontSize = 18.sp)
+                }
             },
         )
     }
 }
 
 @Composable
-private fun MapPane(
+private fun RouteTimelinePane(
     modifier: Modifier,
-    mock: Boolean,
-    routeTitle: String,
+    state: TripUiState,
+    onToggleStop: (String, Boolean) -> Unit,
 ) {
+    val selected = state.trip.selectedStops()
+    val done = doneCount(state)
+    val doneIds = when (val p = state.phase) {
+        is TripPhase.Navigating -> selected.takeWhile { it.id != p.stopId }.map { it.id }.toSet()
+        is TripPhase.Arrived -> selected.takeWhile { it.id != p.stopId }.map { it.id }.toSet() + p.stopId
+        is TripPhase.AwaitingNext -> {
+            val idx = selected.indexOfFirst { it.id == p.nextStopId }
+            if (idx <= 0) emptySet() else selected.take(idx).map { it.id }.toSet()
+        }
+        TripPhase.Completed -> selected.map { it.id }.toSet()
+        else -> emptySet()
+    }
+    val focusId = when (val p = state.phase) {
+        is TripPhase.Navigating -> p.stopId
+        is TripPhase.AwaitingNext -> p.nextStopId
+        is TripPhase.Arrived -> nextStopAfterArrived(state)?.id
+        else -> null
+    }
+    val membersLine = state.family.members.joinToString(" · ") { member ->
+        when (member.ageBand) {
+            AgeBand.CHILD, AgeBand.SENIOR -> "${member.name}(${member.ageBand.labelKo})"
+            else -> member.name
+        }
+    }
+
     Box(
-        modifier = modifier.background(
-            Brush.linearGradient(listOf(Color(0xFF0D1A30), Color(0xFF132844), Color(0xFF0B1526))),
-        ),
+        modifier = modifier.background(CarBg),
     ) {
-        Box(
-            Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 80.dp)
-                .width(110.dp)
-                .fillMaxHeight()
-                .rotate(12f)
-                .background(
-                    Brush.horizontalGradient(listOf(Color(0xFF2A3F63), Color(0xFF3D5A8A), Color(0xFF2A3F63))),
-                ),
-        )
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .size(18.dp)
-                .clip(RoundedCornerShape(topStart = 9.dp, topEnd = 9.dp, bottomEnd = 9.dp))
-                .rotate(-45f)
-                .background(PeyyaBrand),
-        )
-        Row(
-            Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(40.dp),
+            verticalArrangement = Arrangement.spacedBy(36.dp),
         ) {
-            Text("Peyya", color = CarText, style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Chip(routeTitle)
-                DemoBadge(visible = mock, onDark = true)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "페이야",
+                    color = CarText,
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Spacer(Modifier.width(10.dp))
+                DemoBadge(visible = state.mockMode, onDark = true)
+            }
+            Column(Modifier.weight(1f)) {
+                if (state.phase !is TripPhase.Idle) {
+                    Text(
+                        "오늘 루트 · $done / ${selected.size} 완료",
+                        color = CarTextSub,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    selected.forEachIndexed { index, stop ->
+                        val stopState = when {
+                            stop.id in doneIds -> StopState.Done
+                            stop.id == focusId -> StopState.Current
+                            else -> StopState.Upcoming
+                        }
+                        val caption = when (stopState) {
+                            StopState.Done -> "다녀왔어요"
+                            StopState.Current -> when (state.phase) {
+                                is TripPhase.Navigating -> "지금 가는 곳"
+                                else -> "다음 장소"
+                            }
+                            StopState.Upcoming -> ""
+                        }
+                        CarStopTimelineRow(
+                            order = index + 1,
+                            name = stop.name,
+                            caption = caption,
+                            state = stopState,
+                            isLast = index == selected.lastIndex,
+                        )
+                    }
+                } else {
+                    Text(
+                        "오늘 루트 · 경유지 선택",
+                        color = CarTextSub,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    state.trip.stops.forEach { stop ->
+                        CarStopSelectRow(stop = stop, onToggle = onToggleStop)
+                    }
+                }
+            }
+            Column {
+                Text(
+                    "${state.family.familyName} ${state.family.members.size}명",
+                    color = CarTextSub,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(membersLine, color = CarDim, fontSize = 18.sp)
             }
         }
+        Box(
+            Modifier
+                .align(Alignment.CenterEnd)
+                .width(1.dp)
+                .fillMaxHeight()
+                .background(CarLine),
+        )
     }
 }
 
-@Composable
-private fun Chip(text: String) {
-    Text(
-        text,
-        color = CarText,
-        style = MaterialTheme.typography.labelMedium,
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(Color.Black.copy(alpha = 0.35f))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
+private fun carAddressLine(state: TripUiState): String? = when (val phase = state.phase) {
+    is TripPhase.Arrived -> {
+        val next = nextStopAfterArrived(state) ?: return null
+        val from = state.trip.stops.firstOrNull { it.id == phase.stopId }
+        val dist = from?.let { straightDistanceLabel(it, next) }
+        listOfNotNull(shortAddress(next.address), dist).joinToString(" · ")
+    }
+    is TripPhase.AwaitingNext -> {
+        val stop = state.trip.stops.firstOrNull { it.id == phase.nextStopId } ?: return null
+        val prev = state.trip.selectedStops().let { list ->
+            val idx = list.indexOfFirst { it.id == stop.id }
+            list.getOrNull(idx - 1)
+        }
+        val dist = prev?.let { straightDistanceLabel(it, stop) }
+        listOfNotNull(shortAddress(stop.address), dist).joinToString(" · ")
+    }
+    is TripPhase.Navigating -> {
+        val stop = state.trip.stops.firstOrNull { it.id == phase.stopId } ?: return null
+        shortAddress(stop.address)
+    }
+    else -> null
 }
