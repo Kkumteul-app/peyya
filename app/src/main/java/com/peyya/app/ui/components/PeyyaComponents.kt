@@ -2,22 +2,31 @@ package com.peyya.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,8 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.AgeBand
@@ -44,30 +53,33 @@ import com.peyya.app.ui.theme.PeyyaInk
 import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.ui.theme.PeyyaLine
+import com.peyya.app.ui.theme.PeyyaSoft
 
+enum class StopState { Done, Current, Upcoming }
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FamilyAvatars(members: List<FamilyMember>, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+fun FamilyChips(members: List<FamilyMember>, modifier: Modifier = Modifier) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         members.forEach { member ->
-            val brush = when (member.ageBand) {
-                AgeBand.CHILD -> Brush.linearGradient(listOf(Color(0xFF34D399), Color(0xFF059669)))
-                AgeBand.TEEN -> Brush.linearGradient(listOf(Color(0xFF34D399), PeyyaBrand))
-                AgeBand.SENIOR -> Brush.linearGradient(listOf(Color(0xFFFBBF24), Color(0xFFEA580C)))
-                AgeBand.ADULT -> Brush.linearGradient(listOf(Color(0xFF6B8CFF), PeyyaBrand))
+            val label = when (member.ageBand) {
+                AgeBand.CHILD, AgeBand.SENIOR -> "${member.name} · ${member.ageBand.labelKo}"
+                else -> member.name
             }
-            Box(
+            Text(
+                text = label,
+                color = PeyyaInk,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(brush),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = member.name.take(1),
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(PeyyaSoft)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
         }
     }
 }
@@ -87,46 +99,126 @@ fun StopThumb(stopId: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun StopCard(
+fun StopSelectRow(
     stop: Stop,
-    index: Int,
-    selected: Boolean,
-    active: Boolean,
-    done: Boolean,
     enabled: Boolean,
     onToggle: (String, Boolean) -> Unit,
 ) {
-    val border = when {
-        active -> PeyyaBrand
-        done -> PeyyaInk
-        else -> MaterialTheme.colorScheme.outline
-    }
+    val dim = !stop.selected
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.5.dp, border, RoundedCornerShape(16.dp))
-            .clickable(enabled = enabled) { onToggle(stop.id, !stop.selected) }
-            .padding(10.dp),
+            .heightIn(min = 56.dp)
+            .toggleable(
+                value = stop.selected,
+                enabled = enabled,
+                role = Role.Checkbox,
+                onValueChange = { onToggle(stop.id, it) },
+            )
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StopThumb(stop.id, Modifier.size(width = 88.dp, height = 72.dp))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(stop.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(stop.address, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-            val badge = when {
-                done -> "완료"
-                active -> "현재 · ${index + 1}번"
-                selected -> "선택됨 · ${index + 1}번"
-                else -> "미선택"
-            }
-            Spacer(Modifier.height(4.dp))
+        Checkbox(
+            checked = stop.selected,
+            onCheckedChange = null,
+            colors = CheckboxDefaults.colors(checkedColor = PeyyaBrand),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
             Text(
-                badge,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (done) PeyyaInk else PeyyaBrand,
+                stop.name,
+                color = if (dim) PeyyaDisabledFg else PeyyaInk,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                stop.address,
+                color = if (dim) PeyyaDisabledFg else PeyyaInkDim,
+                fontSize = 13.sp,
+            )
+        }
+    }
+}
+
+@Composable
+fun StopTimelineRow(
+    order: Int,
+    name: String,
+    caption: String,
+    state: StopState,
+    isLast: Boolean,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+    ) {
+        Column(
+            modifier = Modifier.width(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PhoneStopNode(order = order, state = state)
+            if (!isLast) {
+                Box(
+                    Modifier
+                        .padding(top = 4.dp)
+                        .width(2.dp)
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .heightIn(min = 24.dp)
+                        .background(PeyyaLine),
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.padding(bottom = 12.dp)) {
+            Text(
+                name,
+                color = if (state == StopState.Done) PeyyaInkDim else PeyyaInk,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(caption, color = PeyyaInkDim, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun PhoneStopNode(order: Int, state: StopState) {
+    when (state) {
+        StopState.Done -> Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(PeyyaInk),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        }
+        StopState.Current -> Box(
+            modifier = Modifier
+                .size(28.dp)
+                .border(2.5.dp, PeyyaBrand, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "$order",
+                color = PeyyaBrand,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+            )
+        }
+        StopState.Upcoming -> Box(
+            modifier = Modifier
+                .size(28.dp)
+                .border(2.dp, PeyyaLine, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "$order",
+                color = PeyyaInkDim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
             )
         }
     }

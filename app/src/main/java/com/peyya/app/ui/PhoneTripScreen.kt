@@ -45,12 +45,17 @@ import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
 import com.peyya.app.ui.components.DemoBadge
+import com.peyya.app.ui.components.FamilyChips
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
+import com.peyya.app.ui.components.StopSelectRow
+import com.peyya.app.ui.components.StopState
+import com.peyya.app.ui.components.StopTimelineRow
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.ui.theme.PeyyaCanvas
 import com.peyya.app.ui.theme.PeyyaDanger
 import com.peyya.app.ui.theme.PeyyaInk
+import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.viewmodel.TripUiState
 
@@ -74,6 +79,22 @@ fun PhoneTripScreen(
     val showVoice = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
     val nextPreview = nextStopAfterArrived(state)
     val arrivedStop = currentStop(state)
+    val doneIds = when (val p = state.phase) {
+        is TripPhase.Navigating -> selected.takeWhile { it.id != p.stopId }.map { it.id }.toSet()
+        is TripPhase.Arrived -> selected.takeWhile { it.id != p.stopId }.map { it.id }.toSet() + p.stopId
+        is TripPhase.AwaitingNext -> {
+            val idx = selected.indexOfFirst { it.id == p.nextStopId }
+            if (idx <= 0) emptySet() else selected.take(idx).map { it.id }.toSet()
+        }
+        TripPhase.Completed -> selected.map { it.id }.toSet()
+        else -> emptySet()
+    }
+    val focusId = when (val p = state.phase) {
+        is TripPhase.Navigating -> p.stopId
+        is TripPhase.AwaitingNext -> p.nextStopId
+        is TripPhase.Arrived -> nextPreview?.id
+        else -> null
+    }
     var menuExpanded by remember { mutableStateOf(false) }
     var showReset by remember { mutableStateOf(false) }
 
@@ -164,7 +185,57 @@ fun PhoneTripScreen(
                 }
             }
 
-            // 6번에서 타임라인·가족 칩으로 채움
+            Spacer(Modifier.height(16.dp))
+            Text(
+                state.trip.title,
+                color = PeyyaInkDim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(4.dp))
+            if (state.phase is TripPhase.Idle) {
+                state.trip.stops.forEach { stop ->
+                    StopSelectRow(
+                        stop = stop,
+                        enabled = true,
+                        onToggle = onToggleStop,
+                    )
+                }
+            } else {
+                selected.forEachIndexed { index, stop ->
+                    val stopState = when {
+                        stop.id in doneIds -> StopState.Done
+                        stop.id == focusId -> StopState.Current
+                        else -> StopState.Upcoming
+                    }
+                    val short = shortAddress(stop.address)
+                    val caption = when (stopState) {
+                        StopState.Done -> "$short · 다녀왔어요"
+                        StopState.Current -> when (state.phase) {
+                            is TripPhase.Navigating -> "$short · 지금 가는 곳"
+                            else -> "$short · 다음 장소"
+                        }
+                        StopState.Upcoming -> short
+                    }
+                    StopTimelineRow(
+                        order = index + 1,
+                        name = stop.name,
+                        caption = caption,
+                        state = stopState,
+                        isLast = index == selected.lastIndex,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Text(
+                state.family.familyName,
+                color = PeyyaInkDim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(10.dp))
+            FamilyChips(state.family.members)
         }
 
         val primaryLabel = actions.primaryLabel
