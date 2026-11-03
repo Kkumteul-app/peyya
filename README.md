@@ -1,5 +1,7 @@
 # Peyya (페이야)
 
+> GitHub: https://github.com/Kkumteul-app/peyya
+
 Hyundai HMG Pleos Connect 공모전 MVP — **주말 멀티스톱 패밀리 일정 OS**.
 
 국립중앙박물관 → 인근 맛집(데모 POI) 프리셋 루트를 체크박스로 고르고,  
