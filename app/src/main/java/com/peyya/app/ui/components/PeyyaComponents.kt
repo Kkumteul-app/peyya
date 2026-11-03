@@ -18,16 +18,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.AgeBand
 import com.peyya.app.domain.FamilyMember
 import com.peyya.app.domain.Stop
@@ -36,8 +38,11 @@ import com.peyya.app.ui.theme.CarLineStrong
 import com.peyya.app.ui.theme.CarTextSub
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.ui.theme.PeyyaDanger
+import com.peyya.app.ui.theme.PeyyaDisabledBg
+import com.peyya.app.ui.theme.PeyyaDisabledFg
 import com.peyya.app.ui.theme.PeyyaInk
 import com.peyya.app.ui.theme.PeyyaInkDim
+import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.ui.theme.PeyyaLine
 
 @Composable
@@ -133,6 +138,7 @@ fun PrimaryCta(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    demo: Boolean = false,
 ) {
     Button(
         onClick = onClick,
@@ -141,54 +147,49 @@ fun PrimaryCta(
             .fillMaxWidth()
             .height(56.dp),
         shape = RoundedCornerShape(14.dp),
+        elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = PeyyaBrand,
             contentColor = Color.White,
-            disabledContainerColor = PeyyaBrand.copy(alpha = 0.35f),
-            disabledContentColor = Color.White.copy(alpha = 0.7f),
+            disabledContainerColor = PeyyaDisabledBg,
+            disabledContentColor = PeyyaDisabledFg,
         ),
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(label, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        if (demo) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "데모",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.22f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
     }
 }
 
 @Composable
 fun SecondaryCta(
     label: String,
-    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    outlined: Boolean = true,
 ) {
-    if (outlined) {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-        }
-    } else {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-        }
+    TextButton(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp),
+    ) {
+        Text(
+            label,
+            color = PeyyaInkSub,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 

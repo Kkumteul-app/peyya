@@ -21,10 +21,21 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Replay
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,14 +52,16 @@ import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopThumb
 import com.peyya.app.ui.theme.CarBg
+import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.CarCard
 import com.peyya.app.ui.theme.CarDim
 import com.peyya.app.ui.theme.CarLine
+import com.peyya.app.ui.theme.CarLineStrong
 import com.peyya.app.ui.theme.CarPanel
 import com.peyya.app.ui.theme.CarText
 import com.peyya.app.ui.theme.CarTextSub
-import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.PeyyaBrand
+import com.peyya.app.ui.theme.PeyyaDanger
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -72,7 +85,9 @@ fun CarTripScreen(
         is TripPhase.AwaitingNext -> state.trip.stops.firstOrNull { it.id == p.nextStopId }
         else -> state.trip.selectedStops().firstOrNull()
     }
-    val showTts = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
+    val showVoice = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showReset by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -94,29 +109,74 @@ fun CarTripScreen(
                 .background(CarPanel)
                 .padding(22.dp),
         ) {
-            Text(
-                state.phase.labelKo(),
-                color = CarBrandLight,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    state.phase.labelKo(),
+                    color = CarBrandLight,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+                Box {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(64.dp)) {
+                        Icon(
+                            Icons.Rounded.MoreVert,
+                            contentDescription = "더보기",
+                            tint = CarTextSub,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("일정 처음부터 다시") },
+                            onClick = {
+                                menuExpanded = false
+                                showReset = true
+                            },
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
             Text(title, color = CarText, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(subtitle, color = CarDim, style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(14.dp))
-            if (showTts) {
-                Column(
+            if (showVoice) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
                         .background(CarCard)
                         .border(1.dp, PeyyaBrand, RoundedCornerShape(14.dp))
-                        .padding(14.dp),
+                        .padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(state.lastSpoken, color = CarText, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        state.lastSpoken,
+                        color = CarText,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = onIgnition,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .border(1.dp, CarLineStrong, RoundedCornerShape(16.dp)),
+                    ) {
+                        Icon(
+                            Icons.Rounded.Replay,
+                            contentDescription = "다시 듣기",
+                            tint = CarText,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -176,25 +236,21 @@ fun CarTripScreen(
                     Text(notice, color = CarTextSub, fontSize = 18.sp)
                 }
             }
-            PrimaryCta(actions.primaryLabel, actions.primaryEnabled, actions.onPrimary)
+            val primaryLabel = actions.primaryLabel
+            if (primaryLabel != null) {
+                PrimaryCta(
+                    label = primaryLabel,
+                    enabled = actions.primaryEnabled,
+                    onClick = actions.onPrimary,
+                    demo = actions.primaryIsDemo,
+                )
+            }
             if (actions.secondaryLabel != null && actions.onSecondary != null) {
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SecondaryCta(
-                        actions.secondaryLabel,
-                        actions.secondaryEnabled,
-                        actions.onSecondary,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (actions.tertiaryLabel != null && actions.onTertiary != null) {
-                        SecondaryCta(
-                            actions.tertiaryLabel,
-                            actions.tertiaryEnabled,
-                            actions.onTertiary,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                SecondaryCta(
+                    label = actions.secondaryLabel,
+                    onClick = actions.onSecondary,
+                )
             }
             Spacer(Modifier.height(10.dp))
             Text(
@@ -203,6 +259,22 @@ fun CarTripScreen(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+    }
+
+    if (showReset) {
+        AlertDialog(
+            onDismissRequest = { showReset = false },
+            title = { Text("일정을 처음부터 다시 할까요?") },
+            text = { Text("지금까지 진행한 루트 기록이 지워집니다.") },
+            confirmButton = {
+                TextButton(onClick = { showReset = false; onResetTrip() }) {
+                    Text("다시 하기", color = PeyyaDanger)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReset = false }) { Text("취소") }
+            },
+        )
     }
 }
 

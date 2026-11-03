@@ -4,15 +4,12 @@ import com.peyya.app.domain.TripPhase
 import com.peyya.app.viewmodel.TripUiState
 
 data class TripActions(
-    val primaryLabel: String,
+    val primaryLabel: String?,
     val primaryEnabled: Boolean,
     val onPrimary: () -> Unit,
+    val primaryIsDemo: Boolean = false,
     val secondaryLabel: String? = null,
-    val secondaryEnabled: Boolean = false,
     val onSecondary: (() -> Unit)? = null,
-    val tertiaryLabel: String? = null,
-    val tertiaryEnabled: Boolean = false,
-    val onTertiary: (() -> Unit)? = null,
 )
 
 fun resolveTripActions(
@@ -30,37 +27,28 @@ fun resolveTripActions(
         onPrimary = onStartRoute,
     )
     is TripPhase.Navigating -> TripActions(
-        primaryLabel = "도착 처리",
+        primaryLabel = "도착했어요",
         primaryEnabled = true,
         onPrimary = onMarkArrived,
-        secondaryLabel = "일정 초기화",
-        secondaryEnabled = true,
-        onSecondary = onResetTrip,
+        primaryIsDemo = state.mockMode,
     )
     is TripPhase.Arrived -> TripActions(
-        primaryLabel = "시동 (다음 안내)",
+        primaryLabel = "시동 걸기",
         primaryEnabled = true,
         onPrimary = onIgnition,
-        secondaryLabel = "건너뛰기",
-        secondaryEnabled = true,
+        primaryIsDemo = state.mockMode,
+        secondaryLabel = "다음 장소 건너뛰기",
         onSecondary = onSkipNext,
-        tertiaryLabel = "일정 초기화",
-        tertiaryEnabled = true,
-        onTertiary = onResetTrip,
     )
     is TripPhase.AwaitingNext -> TripActions(
-        primaryLabel = "다음 안내 확인",
+        primaryLabel = "안내 시작",
         primaryEnabled = true,
         onPrimary = onConfirmNext,
         secondaryLabel = "건너뛰기",
-        secondaryEnabled = true,
         onSecondary = onSkipNext,
-        tertiaryLabel = "다시 듣기",
-        tertiaryEnabled = true,
-        onTertiary = onIgnition,
     )
     TripPhase.Completed -> TripActions(
-        primaryLabel = "일정 초기화",
+        primaryLabel = "처음부터 다시",
         primaryEnabled = true,
         onPrimary = onResetTrip,
     )
