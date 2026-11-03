@@ -8,8 +8,6 @@ import androidx.compose.runtime.Composable
 private val PhoneColorScheme = lightColorScheme(
     primary = PeyyaBrand,
     onPrimary = PeyyaCanvas,
-    secondary = PeyyaAccent,
-    onSecondary = PeyyaCanvas,
     background = PeyyaCanvas,
     onBackground = PeyyaInk,
     surface = PeyyaCanvas,
@@ -22,8 +20,6 @@ private val PhoneColorScheme = lightColorScheme(
 private val CarColorScheme = darkColorScheme(
     primary = PeyyaBrand,
     onPrimary = PeyyaCanvas,
-    secondary = PeyyaAccent,
-    onSecondary = PeyyaCanvas,
     background = CarBg,
     onBackground = CarText,
     surface = CarPanel,
@@ -40,7 +36,7 @@ fun PeyyaTheme(
 ) {
     MaterialTheme(
         colorScheme = if (carMode) CarColorScheme else PhoneColorScheme,
-        typography = PeyyaTypography,
+        typography = if (carMode) CarTypography else PeyyaTypography,
         content = content,
     )
 }

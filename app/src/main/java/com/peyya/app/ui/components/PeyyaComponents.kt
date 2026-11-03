@@ -31,12 +31,14 @@ import androidx.compose.ui.unit.dp
 import com.peyya.app.domain.AgeBand
 import com.peyya.app.domain.FamilyMember
 import com.peyya.app.domain.Stop
-import com.peyya.app.ui.theme.FoodDeep
-import com.peyya.app.ui.theme.FoodMid
-import com.peyya.app.ui.theme.MuseumDeep
-import com.peyya.app.ui.theme.MuseumMid
+import com.peyya.app.ui.theme.CarBg
+import com.peyya.app.ui.theme.CarLineStrong
+import com.peyya.app.ui.theme.CarTextSub
 import com.peyya.app.ui.theme.PeyyaBrand
-import com.peyya.app.ui.theme.PeyyaSuccess
+import com.peyya.app.ui.theme.PeyyaDanger
+import com.peyya.app.ui.theme.PeyyaInk
+import com.peyya.app.ui.theme.PeyyaInkDim
+import com.peyya.app.ui.theme.PeyyaLine
 
 @Composable
 fun FamilyAvatars(members: List<FamilyMember>, modifier: Modifier = Modifier) {
@@ -68,19 +70,15 @@ fun FamilyAvatars(members: List<FamilyMember>, modifier: Modifier = Modifier) {
 @Composable
 fun StopThumb(stopId: String, modifier: Modifier = Modifier) {
     val brush = if (stopId.contains("museum", ignoreCase = true) || stopId == "museum") {
-        Brush.linearGradient(listOf(MuseumMid, MuseumDeep))
+        Brush.linearGradient(listOf(CarLineStrong, CarBg))
     } else {
-        Brush.linearGradient(listOf(FoodMid, FoodDeep))
+        Brush.linearGradient(listOf(PeyyaDanger, PeyyaInk))
     }
-    val label = if (stopId == "museum") "Museum" else "Food"
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(brush),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = Color.White, style = MaterialTheme.typography.labelMedium)
-    }
+    )
 }
 
 @Composable
@@ -95,7 +93,7 @@ fun StopCard(
 ) {
     val border = when {
         active -> PeyyaBrand
-        done -> PeyyaSuccess
+        done -> PeyyaInk
         else -> MaterialTheme.colorScheme.outline
     }
     Row(
@@ -123,7 +121,7 @@ fun StopCard(
             Text(
                 badge,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (done) PeyyaSuccess else PeyyaBrand,
+                color = if (done) PeyyaInk else PeyyaBrand,
             )
         }
     }
@@ -195,15 +193,16 @@ fun SecondaryCta(
 }
 
 @Composable
-fun MockChip(mock: Boolean) {
-    if (!mock) return
+fun DemoBadge(visible: Boolean, onDark: Boolean = false) {
+    if (!visible) return
+    val fg = if (onDark) CarTextSub else PeyyaInkDim
+    val line = if (onDark) CarLineStrong else PeyyaLine
     Text(
-        text = "Mock",
-        color = Color.White,
+        "데모",
+        color = fg,
         style = MaterialTheme.typography.labelMedium,
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(Color(0xFF1A1A1A))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .border(1.dp, line, RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
     )
 }

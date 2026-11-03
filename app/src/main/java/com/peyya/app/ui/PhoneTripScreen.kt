@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
 import com.peyya.app.ui.components.FamilyAvatars
-import com.peyya.app.ui.components.MockChip
+import com.peyya.app.ui.components.DemoBadge
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopCard
@@ -78,7 +78,7 @@ fun PhoneTripScreen(
                 Text("Peyya", style = MaterialTheme.typography.titleLarge)
                 Text(state.phase.labelKo(), color = PeyyaBrand, style = MaterialTheme.typography.labelMedium)
             }
-            MockChip(state.mockMode)
+            DemoBadge(visible = state.mockMode, onDark = false)
         }
         Spacer(Modifier.height(16.dp))
         Column(
@@ -118,7 +118,7 @@ fun PhoneTripScreen(
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (state.lastSpoken.isNotBlank()) {
                     Spacer(Modifier.height(8.dp))
-                    Text("TTS: ${state.lastSpoken}", color = PeyyaBrand, style = MaterialTheme.typography.bodyMedium)
+                    Text(state.lastSpoken, color = PeyyaBrand, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             Spacer(Modifier.height(12.dp))

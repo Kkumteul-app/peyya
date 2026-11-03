@@ -8,7 +8,8 @@ import com.peyya.app.domain.TripPlan
 
 /**
  * Demo POI data for contest MVP / phone screen recording.
- * Museum coords approximate official location; restaurant is a nearby invented POI.
+ * Museum coords approximate official location; restaurant is a nearby invented POI
+ * (poiId peyya-demo-restaurant — not a live booking target).
  */
 object PresetTrips {
     val defaultFamily = FamilyProfile(
@@ -35,9 +36,8 @@ object PresetTrips {
             ),
             Stop(
                 id = "restaurant",
-                name = "용산 한식 담소 (데모)",
-                address = "서울 용산구 한강대로 405 인근 (데모 POI)",
-                // ~1.2km N of museum — invented for demo, not a live booking target
+                name = "용산 한식 담소",
+                address = "서울 용산구 한강대로 405 인근",
                 latitude = 37.53120,
                 longitude = 126.96580,
                 poiId = "peyya-demo-restaurant",

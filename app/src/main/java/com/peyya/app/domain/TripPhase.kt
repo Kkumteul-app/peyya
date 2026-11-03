@@ -13,9 +13,9 @@ sealed interface TripPhase {
 }
 
 fun TripPhase.labelKo(): String = when (this) {
-    TripPhase.Idle -> "대기"
+    TripPhase.Idle -> "출발 전"
     is TripPhase.Navigating -> "안내 중"
     is TripPhase.Arrived -> "도착"
-    is TripPhase.AwaitingNext -> "다음 목적지 확인"
-    TripPhase.Completed -> "완료"
+    is TripPhase.AwaitingNext -> "다음 장소"
+    TripPhase.Completed -> "모두 마쳤어요"
 }

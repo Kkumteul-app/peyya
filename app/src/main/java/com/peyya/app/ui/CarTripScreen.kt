@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,10 +25,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
-import com.peyya.app.ui.components.MockChip
+import com.peyya.app.ui.components.DemoBadge
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopThumb
@@ -39,8 +40,7 @@ import com.peyya.app.ui.theme.CarDim
 import com.peyya.app.ui.theme.CarLine
 import com.peyya.app.ui.theme.CarPanel
 import com.peyya.app.ui.theme.CarText
-import com.peyya.app.ui.theme.CarTts
-import com.peyya.app.ui.theme.PeyyaAccent
+import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.viewmodel.TripUiState
 
@@ -66,7 +66,6 @@ fun CarTripScreen(
         else -> state.trip.selectedStops().firstOrNull()
     }
     val showTts = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
-    val hero = state.phase is TripPhase.Arrived || state.phase is TripPhase.AwaitingNext
 
     Row(
         modifier = Modifier
@@ -90,32 +89,14 @@ fun CarTripScreen(
                 .background(CarPanel)
                 .padding(22.dp),
         ) {
-            if (hero) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(PeyyaAccent),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        if (state.phase is TripPhase.Arrived) "HERO · IGNITION" else "HERO · TTS",
-                        color = PeyyaAccent,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
-            } else {
-                Text(
-                    when (state.phase) {
-                        TripPhase.Idle -> "READY"
-                        TripPhase.Completed -> "COMPLETED"
-                        else -> "NAVIGATING"
-                    },
-                    color = Color(0xFF7AA2FF),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
+            Text(
+                state.phase.labelKo(),
+                color = CarBrandLight,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
             Spacer(Modifier.height(8.dp))
             Text(title, color = CarText, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
@@ -126,12 +107,10 @@ fun CarTripScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(CarTts)
+                        .background(CarCard)
                         .border(1.dp, PeyyaBrand, RoundedCornerShape(14.dp))
                         .padding(14.dp),
                 ) {
-                    Text("TTS", color = Color(0xFF7AA2FF), style = MaterialTheme.typography.labelMedium)
-                    Spacer(Modifier.height(6.dp))
                     Text(state.lastSpoken, color = CarText, style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(12.dp))
@@ -249,7 +228,7 @@ private fun MapPane(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Chip(routeTitle)
                 Chip(phaseLabel)
-                MockChip(mock)
+                DemoBadge(visible = mock, onDark = true)
             }
         }
         Column(

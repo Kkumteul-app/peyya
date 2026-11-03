@@ -1,5 +1,6 @@
 package com.peyya.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.peyya.app.data.PresetTrips
 import com.peyya.app.domain.Stop
@@ -64,7 +65,7 @@ class TripViewModel(
             is TripPhase.Arrived -> proposeNextAfterArrived(phase.stopId)
             is TripPhase.AwaitingNext -> {
                 val stop = findStop(phase.nextStopId) ?: return
-                val message = "다음 목적지는 ${stop.name} 입니다. 안내를 시작할까요?"
+                val message = "다음 목적지는 ${stop.name}입니다. 안내를 시작할까요?"
                 speak(message)
                 setStatus(message)
             }
@@ -89,7 +90,7 @@ class TripViewModel(
             completeTrip()
             return
         }
-        val message = "다음 목적지는 ${next.name} 입니다. 안내를 시작할까요?"
+        val message = "다음 목적지는 ${next.name}입니다. 안내를 시작할까요?"
         speak(message)
         _uiState.update {
             it.copy(
@@ -131,10 +132,10 @@ class TripViewModel(
             return
         }
         val mode = if (navi.isMock) "Mock" else "NaviHelper"
+        Log.d(TAG, "route requested mode=$mode stop=${stop.id}")
         _uiState.update {
             it.copy(
                 phase = if (navigating) TripPhase.Navigating(stop.id) else it.phase,
-                statusMessage = "[$mode] ${stop.name} 경로 요청 완료",
             )
         }
     }
@@ -175,5 +176,9 @@ class TripViewModel(
 
     private fun setStatus(message: String) {
         _uiState.update { it.copy(statusMessage = message) }
+    }
+
+    companion object {
+        private const val TAG = "PeyyaTrip"
     }
 }
