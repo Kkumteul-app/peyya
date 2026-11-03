@@ -9,6 +9,7 @@ data class TripUiState(
     val trip: TripPlan,
     val phase: TripPhase = TripPhase.Idle,
     val mockMode: Boolean = true,
-    val statusMessage: String = "경유지를 확인한 뒤 오늘 루트를 시작하세요.",
+    val notice: String? = null,
     val lastSpoken: String = "",
+    val snackbar: String? = null,
 )

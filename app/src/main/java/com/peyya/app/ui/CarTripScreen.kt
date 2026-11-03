@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +46,7 @@ import com.peyya.app.ui.theme.CarDim
 import com.peyya.app.ui.theme.CarLine
 import com.peyya.app.ui.theme.CarPanel
 import com.peyya.app.ui.theme.CarText
+import com.peyya.app.ui.theme.CarTextSub
 import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.viewmodel.TripUiState
@@ -80,11 +84,8 @@ fun CarTripScreen(
             modifier = Modifier
                 .weight(1.35f)
                 .fillMaxHeight(),
-            phaseLabel = state.phase.labelKo(),
             mock = state.mockMode,
             routeTitle = state.trip.title,
-            etaLabel = etaLabel(state),
-            etaSub = focusStop?.let { "${it.name}" } ?: state.statusMessage,
         )
         Column(
             modifier = Modifier
@@ -133,7 +134,7 @@ fun CarTripScreen(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(stop.name, color = CarText, style = MaterialTheme.typography.titleMedium)
-                        Text(state.statusMessage, color = CarDim, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                        Text(stop.address, color = CarDim, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -157,6 +158,24 @@ fun CarTripScreen(
                 }
             }
             Spacer(Modifier.weight(1f))
+            val notice = state.notice
+            if (notice != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.Info,
+                        contentDescription = null,
+                        tint = CarTextSub,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(notice, color = CarTextSub, fontSize = 18.sp)
+                }
+            }
             PrimaryCta(actions.primaryLabel, actions.primaryEnabled, actions.onPrimary)
             if (actions.secondaryLabel != null && actions.onSecondary != null) {
                 Spacer(Modifier.height(8.dp))
@@ -190,11 +209,8 @@ fun CarTripScreen(
 @Composable
 private fun MapPane(
     modifier: Modifier,
-    phaseLabel: String,
     mock: Boolean,
     routeTitle: String,
-    etaLabel: String,
-    etaSub: String,
 ) {
     Box(
         modifier = modifier.background(
@@ -231,22 +247,8 @@ private fun MapPane(
             Text("Peyya", color = CarText, style = MaterialTheme.typography.titleLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Chip(routeTitle)
-                Chip(phaseLabel)
                 DemoBadge(visible = mock, onDark = true)
             }
-        }
-        Column(
-            Modifier
-                .align(Alignment.BottomStart)
-                .padding(20.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xD10C1220))
-                .border(1.dp, CarLine, RoundedCornerShape(16.dp))
-                .padding(14.dp),
-        ) {
-            Text("상태", color = CarDim, style = MaterialTheme.typography.labelMedium)
-            Text(etaLabel, color = CarText, style = MaterialTheme.typography.headlineMedium)
-            Text(etaSub, color = CarDim, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
         }
     }
 }
@@ -262,12 +264,4 @@ private fun Chip(text: String) {
             .background(Color.Black.copy(alpha = 0.35f))
             .padding(horizontal = 10.dp, vertical = 6.dp),
     )
-}
-
-private fun etaLabel(state: TripUiState): String = when (state.phase) {
-    TripPhase.Idle -> "준비"
-    is TripPhase.Navigating -> "안내 중"
-    is TripPhase.Arrived -> "도착 완료"
-    is TripPhase.AwaitingNext -> "확인 대기"
-    TripPhase.Completed -> "모두 완료"
 }

@@ -43,7 +43,7 @@ class TripViewModel(
         val stops = _uiState.value.trip.selectedStops()
         val first = stops.firstOrNull()
         if (first == null) {
-            setStatus("선택된 경유지가 없습니다.")
+            setNotice("선택된 경유지가 없습니다.")
             return
         }
         routeTo(first, navigating = true)
@@ -54,7 +54,7 @@ class TripViewModel(
         _uiState.update {
             it.copy(
                 phase = TripPhase.Arrived(navigating.stopId),
-                statusMessage = "도착했어요. 시동 걸면 다음을 부를게요.",
+                notice = null,
             )
         }
     }
@@ -65,11 +65,9 @@ class TripViewModel(
             is TripPhase.Arrived -> proposeNextAfterArrived(phase.stopId)
             is TripPhase.AwaitingNext -> {
                 val stop = findStop(phase.nextStopId) ?: return
-                val message = "다음 목적지는 ${stop.name}입니다. 안내를 시작할까요?"
-                speak(message)
-                setStatus(message)
+                speak("다음 목적지는 ${stop.name}입니다. 안내를 시작할까요?")
             }
-            else -> setStatus("도착 처리 후 시동을 눌러 다음 안내를 받으세요.")
+            else -> setNotice("도착 처리 후 시동을 눌러 다음 안내를 받으세요.")
         }
     }
 
@@ -78,10 +76,15 @@ class TripViewModel(
             it.copy(
                 trip = PresetTrips.weekendMuseumTrip,
                 phase = TripPhase.Idle,
-                statusMessage = "일정을 초기화했습니다. 다시 시작할 수 있습니다.",
+                notice = null,
                 lastSpoken = "",
+                snackbar = "일정을 초기화했습니다. 다시 시작할 수 있습니다.",
             )
         }
+    }
+
+    fun consumeSnackbar() {
+        _uiState.update { it.copy(snackbar = null) }
     }
 
     private fun proposeNextAfterArrived(currentId: String) {
@@ -95,7 +98,7 @@ class TripViewModel(
         _uiState.update {
             it.copy(
                 phase = TripPhase.AwaitingNext(next.id),
-                statusMessage = message,
+                notice = null,
                 lastSpoken = message,
             )
         }
@@ -114,7 +117,7 @@ class TripViewModel(
                 val next = findNextStopAfter(phase.stopId)
                 if (next == null) completeTrip() else skipFrom(next.id)
             }
-            else -> setStatus("건너뛸 다음 목적지가 없습니다.")
+            else -> setNotice("건너뛸 다음 목적지가 없습니다.")
         }
     }
 
@@ -128,7 +131,8 @@ class TripViewModel(
     private fun routeTo(stop: Stop, navigating: Boolean) {
         val result = navi.requestRoute(stop)
         if (result.isFailure) {
-            setStatus("경로 요청 실패: ${result.exceptionOrNull()?.message}")
+            Log.e(TAG, "route failed", result.exceptionOrNull())
+            setNotice("길안내를 시작하지 못했어요. 다시 시도해 주세요.")
             return
         }
         val mode = if (navi.isMock) "Mock" else "NaviHelper"
@@ -136,6 +140,7 @@ class TripViewModel(
         _uiState.update {
             it.copy(
                 phase = if (navigating) TripPhase.Navigating(stop.id) else it.phase,
+                notice = null,
             )
         }
     }
@@ -156,15 +161,14 @@ class TripViewModel(
             completeTrip()
             return
         }
-        val message = "다음 ${next.name} 안내를 건너뛰고 대기합니다."
         _uiState.update {
-            it.copy(phase = TripPhase.AwaitingNext(next.id), statusMessage = message)
+            it.copy(phase = TripPhase.AwaitingNext(next.id), notice = null)
         }
     }
 
     private fun completeTrip() {
         _uiState.update {
-            it.copy(phase = TripPhase.Completed, statusMessage = "오늘 루트를 모두 마쳤습니다.")
+            it.copy(phase = TripPhase.Completed, notice = null)
         }
         speak("오늘 루트를 모두 마쳤습니다.")
     }
@@ -174,8 +178,8 @@ class TripViewModel(
         _uiState.update { it.copy(lastSpoken = message) }
     }
 
-    private fun setStatus(message: String) {
-        _uiState.update { it.copy(statusMessage = message) }
+    private fun setNotice(message: String) {
+        _uiState.update { it.copy(notice = message) }
     }
 
     companion object {

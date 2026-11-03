@@ -11,10 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,14 +27,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
-import com.peyya.app.ui.components.FamilyAvatars
 import com.peyya.app.ui.components.DemoBadge
+import com.peyya.app.ui.components.FamilyAvatars
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopCard
 import com.peyya.app.ui.theme.PeyyaBrand
+import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.ui.theme.PeyyaSoft
 import com.peyya.app.viewmodel.TripUiState
 
@@ -125,8 +132,23 @@ fun PhoneTripScreen(
                     Text(state.lastSpoken, color = PeyyaBrand, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(state.statusMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val notice = state.notice
+            if (notice != null) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        Icons.Rounded.Info,
+                        contentDescription = null,
+                        tint = PeyyaInkSub,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(notice, color = PeyyaInkSub, fontSize = 13.sp)
+                }
+            }
         }
         Spacer(Modifier.height(12.dp))
         PrimaryCta(actions.primaryLabel, actions.primaryEnabled, actions.onPrimary)
