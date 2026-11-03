@@ -101,7 +101,11 @@ adb shell am start -n com.peyya.app/.MainActivity --ez force_mock true
 peyya/
   app/src/main/java/com/peyya/app/
     MainActivity.kt
-    ui/PeyyaApp.kt, TripScreen.kt, theme/
+    ui/
+      PeyyaApp.kt, TripScreen.kt (세로=Phone / 가로=Car)
+      PhoneTripScreen.kt, CarTripScreen.kt, TripActions.kt
+      components/PeyyaComponents.kt
+      theme/ Color · Theme · Type
     domain/ FamilyProfile, Stop, TripPlan, TripPhase
     data/PresetTrips.kt
     service/ NaviGateway, Pleos/Mock, Ignition*, SpeechGuide

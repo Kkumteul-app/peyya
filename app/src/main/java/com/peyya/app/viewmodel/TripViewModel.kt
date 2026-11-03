@@ -53,7 +53,7 @@ class TripViewModel(
         _uiState.update {
             it.copy(
                 phase = TripPhase.Arrived(navigating.stopId),
-                statusMessage = "도착 처리됨. 시동으로 다음 안내를 받으세요.",
+                statusMessage = "도착했어요. 시동 걸면 다음을 부를게요.",
             )
         }
     }
@@ -163,9 +163,9 @@ class TripViewModel(
 
     private fun completeTrip() {
         _uiState.update {
-            it.copy(phase = TripPhase.Completed, statusMessage = "일정을 완료했습니다.")
+            it.copy(phase = TripPhase.Completed, statusMessage = "오늘 루트를 모두 마쳤습니다.")
         }
-        speak("일정을 완료했습니다.")
+        speak("오늘 루트를 모두 마쳤습니다.")
     }
 
     private fun speak(message: String) {

@@ -21,8 +21,9 @@ fun PeyyaApp(
         ),
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val carMode = isCarLayout()
 
-    PeyyaTheme {
+    PeyyaTheme(carMode = carMode) {
         TripScreen(
             state = state,
             onFamilyNameChange = viewModel::updateFamilyName,
