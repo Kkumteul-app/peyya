@@ -12,6 +12,17 @@ import com.peyya.app.domain.TripPlan
  * (poiId peyya-demo-restaurant — not a live booking target).
  */
 object PresetTrips {
+    /** 국립중앙박물관 공식 예약 안내 (어린이박물관·VR 등). 인앱 결제 없음. */
+    const val MUSEUM_BOOKING_URL =
+        "https://www.museum.go.kr/MUSEUM/contents/M0104090000.do"
+
+    val MUSEUM_PREP_CHECKLIST: List<String> = listOf(
+        "어린이박물관·특별전 예매 여부 확인",
+        "모바일 예매 확인증 준비",
+        "주차 위치·입차 동선 확인",
+        "유모차·가방 보관소 위치 확인",
+    )
+
     val defaultFamily = FamilyProfile(
         familyName = "김씨 가족",
         members = listOf(
@@ -33,6 +44,9 @@ object PresetTrips {
                 latitude = 37.52386,
                 longitude = 126.98047,
                 poiId = "peyya-demo-museum",
+                needsBooking = true,
+                bookingUrl = MUSEUM_BOOKING_URL,
+                prepChecklist = MUSEUM_PREP_CHECKLIST,
             ),
             Stop(
                 id = "restaurant",
