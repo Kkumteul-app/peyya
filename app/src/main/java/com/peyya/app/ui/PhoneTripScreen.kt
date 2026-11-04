@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.TripPhase
@@ -141,6 +142,15 @@ fun PhoneTripScreen(
                                 showReset = true
                             },
                         )
+                        if (state.phase is TripPhase.Navigating) {
+                            DropdownMenuItem(
+                                text = { Text("도착으로 표시") },
+                                onClick = {
+                                    menuExpanded = false
+                                    onMarkArrived()
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -250,6 +260,19 @@ fun PhoneTripScreen(
         if (actions.secondaryLabel != null && actions.onSecondary != null) {
             Spacer(Modifier.height(4.dp))
             SecondaryCta(actions.secondaryLabel, actions.onSecondary)
+        }
+        if (primaryLabel == null &&
+            actions.secondaryLabel == null &&
+            state.phase is TripPhase.Arrived
+        ) {
+            Text(
+                "다음 제안 대기 중 · 지금은 눌러야 할 버튼이 없어요",
+                color = PeyyaInkDim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 

@@ -15,6 +15,7 @@ data class TripActions(
     val onSecondary: (() -> Unit)? = null,
 )
 
+@Suppress("UNUSED_PARAMETER")
 fun resolveTripActions(
     state: TripUiState,
     onStartRoute: () -> Unit,
@@ -25,36 +26,22 @@ fun resolveTripActions(
     onResetTrip: () -> Unit,
 ): TripActions = when (state.phase) {
     TripPhase.Idle -> TripActions(
-        primaryLabel = "오늘 루트 시작",
+        primaryLabel = "운전 시작",
         primaryEnabled = state.trip.selectedStops().isNotEmpty(),
         onPrimary = onStartRoute,
     )
     is TripPhase.Navigating -> TripActions(
-        primaryLabel = "도착했어요",
-        primaryEnabled = true,
-        onPrimary = onMarkArrived,
-        primaryIsDemo = state.mockMode,
+        // 도착은 내비/GPS·메뉴「도착으로 표시」. 주 CTA에 「도착했어요」 없음.
+        primaryLabel = null,
+        primaryEnabled = false,
+        onPrimary = {},
     )
-    is TripPhase.Arrived -> {
-        if (state.mockMode) {
-            TripActions(
-                primaryLabel = "시동 걸기",
-                primaryEnabled = true,
-                onPrimary = onIgnition,
-                primaryIsDemo = true,
-                secondaryLabel = "다음 장소 건너뛰기",
-                onSecondary = onSkipNext,
-            )
-        } else {
-            TripActions(
-                primaryLabel = null,
-                primaryEnabled = false,
-                onPrimary = {},
-                secondaryLabel = "다음 장소 건너뛰기",
-                onSecondary = onSkipNext,
-            )
-        }
-    }
+    is TripPhase.Arrived -> TripActions(
+        // NextLeg는 시동 OFF→ON 또는 유지 5분으로 자동 제안. 상시 「시동 걸기」 없음.
+        primaryLabel = null,
+        primaryEnabled = false,
+        onPrimary = {},
+    )
     is TripPhase.AwaitingNext -> TripActions(
         primaryLabel = "안내 시작",
         primaryEnabled = true,
@@ -79,7 +66,8 @@ fun heroCopy(state: TripUiState): Pair<String, String> = when (val phase = state
     }
     is TripPhase.Arrived -> {
         val name = state.trip.stops.firstOrNull { it.id == phase.stopId }?.name ?: "목적지"
-        "${name}에\n도착했어요" to "시동을 걸면 다음 장소를 음성으로 알려드려요."
+        "${name}에\n도착했어요" to
+            "시동을 끄었다가 다시 켜거나, 시동을 유지한 채 5분이 지나면 다음 장소를 제안해요."
     }
     is TripPhase.AwaitingNext -> {
         val name = state.trip.stops.firstOrNull { it.id == phase.nextStopId }?.name ?: "다음 장소"

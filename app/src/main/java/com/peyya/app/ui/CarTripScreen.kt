@@ -131,6 +131,15 @@ fun CarTripScreen(
                                 showReset = true
                             },
                         )
+                        if (state.phase is TripPhase.Navigating) {
+                            DropdownMenuItem(
+                                text = { Text("도착으로 표시", fontSize = 18.sp) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onMarkArrived()
+                                },
+                            )
+                        }
                     }
                 }
             }
