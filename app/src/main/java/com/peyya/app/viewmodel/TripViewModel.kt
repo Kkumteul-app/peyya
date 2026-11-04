@@ -1,24 +1,61 @@
 package com.peyya.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.peyya.app.data.PresetTrips
-import com.peyya.app.domain.Stop
+import com.peyya.app.progress.CoordinatorState
+import com.peyya.app.progress.OnTripCompleted
+import com.peyya.app.progress.SnoozeChoice
+import com.peyya.app.progress.TripProgressCoordinator
+import com.peyya.app.progress.TripProgressStore
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.service.IgnitionGateway
 import com.peyya.app.service.NaviGateway
-import com.peyya.app.service.SpeechGuide
+import com.peyya.app.service.SpeechPort
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
+/**
+ * UI 바인딩 + Coordinator 이벤트 구독.
+ * phase/타이머 규칙은 [TripProgressCoordinator]가 소유한다.
+ *
+ * - [startRoute] / [startDriving]: 운전 시작
+ * - [markArrived]: 메뉴 수동 도착 (주 CTA 아님)
+ * - [confirmArrivalFromPrompt]: GPS 미확정 알림 확인
+ * - [onIgnition]: UI 데모 시동 신호 (실시동 Flow와 병행)
+ */
 class TripViewModel(
     private val navi: NaviGateway,
     private val ignition: IgnitionGateway,
-    private val speech: SpeechGuide,
+    private val speech: SpeechPort,
+    store: TripProgressStore,
     mockMode: Boolean,
+    onTripCompleted: OnTripCompleted = OnTripCompleted { },
+    clock: () -> Long = { System.currentTimeMillis() },
+    today: () -> LocalDate = { LocalDate.now() },
+    pollIntervalMs: Long = 5_000L,
+    tickIntervalMs: Long = 1_000L,
+    coroutineScope: CoroutineScope? = null,
 ) : ViewModel() {
+    private val scope: CoroutineScope = coroutineScope ?: viewModelScope
+
+    private val coordinator = TripProgressCoordinator(
+        navi = navi,
+        ignition = ignition,
+        store = store,
+        scope = scope,
+        clock = clock,
+        today = today,
+        onTripCompleted = onTripCompleted,
+        pollIntervalMs = pollIntervalMs,
+        tickIntervalMs = tickIntervalMs,
+    )
+
     private val _uiState = MutableStateFlow(
         TripUiState(
             family = PresetTrips.defaultFamily,
@@ -27,6 +64,14 @@ class TripViewModel(
         ),
     )
     val uiState: StateFlow<TripUiState> = _uiState.asStateFlow()
+
+    init {
+        coordinator.bindTrip(_uiState.value.trip)
+        scope.launch {
+            coordinator.state.collect { progress -> applyProgress(progress) }
+        }
+        coordinator.start()
+    }
 
     fun updateFamilyName(name: String) {
         _uiState.update { state ->
@@ -37,47 +82,66 @@ class TripViewModel(
     fun toggleStop(stopId: String, selected: Boolean) {
         if (_uiState.value.phase !is TripPhase.Idle) return
         _uiState.update { it.copy(trip = it.trip.withStopSelection(stopId, selected)) }
+        coordinator.bindTrip(_uiState.value.trip)
     }
 
+    /** 운전 시작 (시동 리마인드 CTA / Idle 주 CTA). */
     fun startRoute() {
-        val stops = _uiState.value.trip.selectedStops()
-        val first = stops.firstOrNull()
-        if (first == null) {
-            setNotice("선택된 경유지가 없습니다.")
-            return
-        }
-        routeTo(first, navigating = true)
+        startDriving()
     }
 
+    fun startDriving() {
+        coordinator.bindTrip(_uiState.value.trip)
+        coordinator.startDriving()
+    }
+
+    /**
+     * 메뉴 「도착으로 표시」.
+     * 안내 중 주 영역의 상시 「도착했어요」가 아닌 오버플로/설정용.
+     */
     fun markArrived() {
-        val navigating = _uiState.value.phase as? TripPhase.Navigating ?: return
-        _uiState.update {
-            it.copy(
-                phase = TripPhase.Arrived(navigating.stopId),
-                notice = null,
-            )
-        }
+        markArrivedFromMenu()
     }
 
+    fun markArrivedFromMenu() {
+        coordinator.markArrivedFromMenu()
+    }
+
+    fun confirmArrivalFromPrompt() {
+        coordinator.confirmArrivalFromPrompt()
+    }
+
+    fun dismissArrivalConfirm() {
+        coordinator.dismissArrivalConfirm()
+    }
+
+    fun onGpsSample(atDestination: Boolean) {
+        coordinator.onGpsSample(atDestination)
+    }
+
+    fun snooze(choice: SnoozeChoice) {
+        coordinator.snooze(choice)
+    }
+
+    fun skipToday() {
+        coordinator.skipToday()
+    }
+
+    /**
+     * UI 데모 「시동 걸기」.
+     * Mock에서는 [IgnitionGateway.signalIgnition]이 ON Flow를 갱신하고,
+     * Coordinator가 NextLeg / 리마인드 정책을 적용한다.
+     */
     fun onIgnition() {
         ignition.signalIgnition()
-        when (val phase = _uiState.value.phase) {
-            is TripPhase.Arrived -> proposeNextAfterArrived(phase.stopId)
-            is TripPhase.AwaitingNext -> {
-                val stop = findStop(phase.nextStopId) ?: return
-                speak("다음 목적지는 ${stop.name}입니다. 안내를 시작할까요?")
-            }
-            else -> setNotice("도착 처리 후 시동을 눌러 다음 안내를 받으세요.")
-        }
     }
 
     fun resetTrip() {
+        val trip = PresetTrips.weekendMuseumTrip
+        coordinator.reset(trip)
         _uiState.update {
             it.copy(
-                trip = PresetTrips.weekendMuseumTrip,
-                phase = TripPhase.Idle,
-                notice = null,
-                lastSpoken = "",
+                trip = trip,
                 snackbar = "일정을 초기화했습니다. 다시 시작할 수 있습니다.",
             )
         }
@@ -87,102 +151,38 @@ class TripViewModel(
         _uiState.update { it.copy(snackbar = null) }
     }
 
-    private fun proposeNextAfterArrived(currentId: String) {
-        val next = findNextStopAfter(currentId)
-        if (next == null) {
-            completeTrip()
-            return
-        }
-        val message = "다음 목적지는 ${next.name}입니다. 안내를 시작할까요?"
-        speak(message)
-        _uiState.update {
-            it.copy(
-                phase = TripPhase.AwaitingNext(next.id),
-                notice = null,
-                lastSpoken = message,
-            )
-        }
-    }
-
     fun confirmNext() {
-        val awaiting = _uiState.value.phase as? TripPhase.AwaitingNext ?: return
-        val stop = findStop(awaiting.nextStopId) ?: return
-        routeTo(stop, navigating = true)
+        coordinator.confirmNext()
     }
 
     fun skipNext() {
-        when (val phase = _uiState.value.phase) {
-            is TripPhase.AwaitingNext -> skipFrom(phase.nextStopId)
-            is TripPhase.Arrived -> {
-                val next = findNextStopAfter(phase.stopId)
-                if (next == null) completeTrip() else skipFrom(next.id)
-            }
-            else -> setNotice("건너뛸 다음 목적지가 없습니다.")
-        }
+        coordinator.skipNext()
     }
 
     override fun onCleared() {
+        coordinator.stop()
         navi.release()
         ignition.release()
         speech.shutdown()
         super.onCleared()
     }
 
-    private fun routeTo(stop: Stop, navigating: Boolean) {
-        val result = navi.requestRoute(stop)
-        if (result.isFailure) {
-            Log.e(TAG, "route failed", result.exceptionOrNull())
-            setNotice("길안내를 시작하지 못했어요. 다시 시도해 주세요.")
-            return
+    private fun applyProgress(progress: CoordinatorState) {
+        val spoken = progress.lastSpoken
+        if (!spoken.isNullOrEmpty() && spoken != _uiState.value.lastSpoken) {
+            speech.speak(spoken)
         }
-        val mode = if (navi.isMock) "Mock" else "NaviHelper"
-        Log.d(TAG, "route requested mode=$mode stop=${stop.id}")
-        _uiState.update {
-            it.copy(
-                phase = if (navigating) TripPhase.Navigating(stop.id) else it.phase,
-                notice = null,
+        _uiState.update { state ->
+            state.copy(
+                phase = progress.phase,
+                notice = progress.notice,
+                lastSpoken = spoken ?: state.lastSpoken,
+                ignitionPromptVisible = progress.ignitionPromptVisible,
+                arrivalConfirmVisible = progress.arrivalConfirmVisible,
+                snoozeUntilEpochMs = progress.snoozeUntilEpochMs,
+                skipTodayDate = progress.skipTodayDate,
+                lastArrivalPath = progress.lastArrivalPath,
             )
         }
-    }
-
-    private fun findNextStopAfter(stopId: String): Stop? {
-        val selected = _uiState.value.trip.selectedStops()
-        val index = selected.indexOfFirst { it.id == stopId }
-        if (index < 0 || index >= selected.lastIndex) return null
-        return selected[index + 1]
-    }
-
-    private fun findStop(stopId: String): Stop? =
-        _uiState.value.trip.stops.firstOrNull { it.id == stopId }
-
-    private fun skipFrom(stopId: String) {
-        val next = findNextStopAfter(stopId)
-        if (next == null) {
-            completeTrip()
-            return
-        }
-        _uiState.update {
-            it.copy(phase = TripPhase.AwaitingNext(next.id), notice = null)
-        }
-    }
-
-    private fun completeTrip() {
-        _uiState.update {
-            it.copy(phase = TripPhase.Completed, notice = null)
-        }
-        speak("오늘 루트를 모두 마쳤습니다.")
-    }
-
-    private fun speak(message: String) {
-        speech.speak(message)
-        _uiState.update { it.copy(lastSpoken = message) }
-    }
-
-    private fun setNotice(message: String) {
-        _uiState.update { it.copy(notice = message) }
-    }
-
-    companion object {
-        private const val TAG = "PeyyaTrip"
     }
 }

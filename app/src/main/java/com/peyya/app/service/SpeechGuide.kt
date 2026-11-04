@@ -7,7 +7,7 @@ import java.util.Locale
 
 class SpeechGuide(
     context: Context,
-) : TextToSpeech.OnInitListener {
+) : SpeechPort, TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
     private var ready = false
 
@@ -30,7 +30,7 @@ class SpeechGuide(
         }
     }
 
-    fun speak(message: String) {
+    override fun speak(message: String) {
         val engine = tts
         if (!ready || engine == null) {
             Log.i(TAG, "TTS skipped (not ready): $message")
@@ -39,7 +39,7 @@ class SpeechGuide(
         engine.speak(message, TextToSpeech.QUEUE_FLUSH, null, "peyya-guide")
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         tts?.stop()
         tts?.shutdown()
         tts = null

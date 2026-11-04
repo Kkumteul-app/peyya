@@ -29,8 +29,10 @@ class MockIgnitionGateway : IgnitionGateway {
         Log.i(TAG, "MockIgnition setOff()")
     }
 
+    /** UI 데모 「시동 걸기」— ON Flow와 병행되도록 상태를 올린다. */
     override fun signalIgnition(): Result<Unit> {
-        Log.i(TAG, "MockIgnition signalIgnition()")
+        setOn()
+        Log.i(TAG, "MockIgnition signalIgnition() → On")
         return Result.success(Unit)
     }
 

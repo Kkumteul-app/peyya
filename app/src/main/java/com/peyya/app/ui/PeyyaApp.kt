@@ -43,8 +43,8 @@ fun PeyyaApp(
             TripScreen(
                 state = state,
                 onToggleStop = viewModel::toggleStop,
-                onStartRoute = viewModel::startRoute,
-                onMarkArrived = viewModel::markArrived,
+                onStartRoute = viewModel::startDriving,
+                onMarkArrived = viewModel::markArrivedFromMenu,
                 onIgnition = viewModel::onIgnition,
                 onConfirmNext = viewModel::confirmNext,
                 onSkipNext = viewModel::skipNext,
