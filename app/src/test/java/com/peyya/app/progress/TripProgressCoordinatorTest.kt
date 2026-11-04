@@ -150,6 +150,45 @@ class TripProgressCoordinatorTest {
     }
 
     @Test
+    fun injectArrived_event_path_confirmsArrived() = runTest {
+        val (coordinator, navi, _) = newCoordinator(
+            scope = backgroundScope,
+            clock = { testScheduler.currentTime },
+        )
+        assertTrue(coordinator.startDriving())
+        runCurrent()
+
+        navi.injectArrived()
+        runCurrent()
+
+        assertTrue(coordinator.state.value.phase is TripPhase.Arrived)
+        assertEquals(ArrivalPath.Event, coordinator.state.value.lastArrivalPath)
+    }
+
+    @Test
+    fun nextLeg_offThenOn_proposesAwaiting() = runTest {
+        val (coordinator, _, ignition) = newCoordinator(
+            scope = backgroundScope,
+            clock = { testScheduler.currentTime },
+        )
+        ignition.setOn()
+        assertTrue(coordinator.startDriving())
+        runCurrent()
+        coordinator.markArrivedFromMenu()
+        runCurrent()
+        assertTrue(coordinator.state.value.phase is TripPhase.Arrived)
+
+        ignition.setOff()
+        runCurrent()
+        ignition.setOn()
+        runCurrent()
+
+        val awaiting = coordinator.state.value.phase as TripPhase.AwaitingNext
+        assertEquals("restaurant", awaiting.nextStopId)
+        assertTrue(coordinator.state.value.nextLegProposed)
+    }
+
+    @Test
     fun ignitionPrompt_showsOnIdleWhenOn_andHiddenAfterStartDriving() = runTest {
         val (coordinator, _, ignition) = newCoordinator(
             scope = backgroundScope,
