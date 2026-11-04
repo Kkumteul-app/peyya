@@ -1,0 +1,11 @@
+versionName=0.1.0
+versionCode=1
+applicationId=com.peyya.app
+buildType=release
+signing=unsigned
+source=app/build/outputs/apk/release/app-release-unsigned.apk
+artifact=apk/Peyya_Peyya_release.apk
+sizeBytes=45587286
+builtAt=2026-11-04T13:37:01+09:00
+command=./gradlew.bat :app:assembleRelease
+status=SUCCESS
