@@ -123,6 +123,12 @@ class TripViewModel(
         coordinator.snooze(choice)
     }
 
+    /** 예약 시각을 설정한 뒤 [SnoozeChoice.AtReservation] 스누즈. */
+    fun snoozeReservation(atEpochMs: Long) {
+        coordinator.setReservationAt(atEpochMs)
+        coordinator.snooze(SnoozeChoice.AtReservation)
+    }
+
     fun skipToday() {
         coordinator.skipToday()
     }

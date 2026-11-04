@@ -3,6 +3,7 @@ package com.peyya.app.ui
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
+import com.peyya.app.progress.SnoozeChoice
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -23,6 +24,11 @@ fun TripScreen(
     onConfirmNext: () -> Unit,
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
+    onSnooze: (SnoozeChoice) -> Unit = {},
+    onSnoozeReservation: (Long) -> Unit = {},
+    onSkipToday: () -> Unit = {},
+    onConfirmArrivalFromPrompt: () -> Unit = {},
+    onDismissArrivalConfirm: () -> Unit = {},
 ) {
     if (isCarLayout()) {
         CarTripScreen(
@@ -34,6 +40,11 @@ fun TripScreen(
             onConfirmNext = onConfirmNext,
             onSkipNext = onSkipNext,
             onResetTrip = onResetTrip,
+            onSnooze = onSnooze,
+            onSnoozeReservation = onSnoozeReservation,
+            onSkipToday = onSkipToday,
+            onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
+            onDismissArrivalConfirm = onDismissArrivalConfirm,
         )
     } else {
         PhoneTripScreen(
@@ -45,6 +56,11 @@ fun TripScreen(
             onConfirmNext = onConfirmNext,
             onSkipNext = onSkipNext,
             onResetTrip = onResetTrip,
+            onSnooze = onSnooze,
+            onSnoozeReservation = onSnoozeReservation,
+            onSkipToday = onSkipToday,
+            onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
+            onDismissArrivalConfirm = onDismissArrivalConfirm,
         )
     }
 }

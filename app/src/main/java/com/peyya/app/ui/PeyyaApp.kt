@@ -49,6 +49,11 @@ fun PeyyaApp(
                 onConfirmNext = viewModel::confirmNext,
                 onSkipNext = viewModel::skipNext,
                 onResetTrip = viewModel::resetTrip,
+                onSnooze = viewModel::snooze,
+                onSnoozeReservation = viewModel::snoozeReservation,
+                onSkipToday = viewModel::skipToday,
+                onConfirmArrivalFromPrompt = viewModel::confirmArrivalFromPrompt,
+                onDismissArrivalConfirm = viewModel::dismissArrivalConfirm,
             )
             SnackbarHost(
                 hostState = snackbarHostState,
