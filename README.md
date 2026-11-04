@@ -5,7 +5,8 @@
 Hyundai HMG Pleos Connect 공모전 MVP — **주말 멀티스톱 패밀리 일정 OS**.
 
 국립중앙박물관 → 인근 맛집(데모 POI) 프리셋 루트를 체크박스로 고르고,  
-`NaviHelper.requestRoute`로 안내를 시작하며, **시동 시뮬** 후 TTS로 다음 목적지를 제안합니다.
+`NaviHelper.requestRoute`로 안내를 시작하며, **시동 시뮬** 후 TTS로 다음 목적지를 제안합니다.  
+추가로 예매·준비 딥링크, 당일적응(**시연용/추정** 목데이터), 음성 시뮬 칩, 완료 후 리뷰·코스 추천(M=3·N=5)이 포함됩니다.
 
 - **앱 이름:** 페이야 (Peyya)
 - **한 줄:** 내비는 길을, 페이야는 가족의 다음 장소를 알려준다.
@@ -28,8 +29,9 @@ adb shell am start -n com.peyya.app/.MainActivity --ez force_mock true
 
 ## APK 위치
 
-- 공모전 제출용: [`apk/Peyya_Peyya_release.apk`](apk/Peyya_Peyya_release.apk)
+- 공모전 제출용: [`apk/Peyya_Peyya_release.apk`](apk/Peyya_Peyya_release.apk) — **versionName 0.1.0 · unsigned release** ([`apk/README.md`](apk/README.md))
 - 로컬 빌드: `app/build/outputs/apk/debug/app-debug.apk`
+- 시연 스토리보드: [`docs/peyya-시연영상-스토리보드.md`](docs/peyya-시연영상-스토리보드.md)
 
 ## 요구 사항
 
