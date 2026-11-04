@@ -58,6 +58,9 @@ import com.peyya.app.ui.components.SnoozePicker
 import com.peyya.app.ui.components.StopSelectRow
 import com.peyya.app.ui.components.StopState
 import com.peyya.app.ui.components.StopTimelineRow
+import com.peyya.app.ui.review.PhoneReviewOrCourseOverlay
+import com.peyya.app.ui.review.ReviewFlowCallbacks
+import com.peyya.app.ui.review.showsReviewOrCourseUi
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.ui.theme.PeyyaCanvas
 import com.peyya.app.ui.theme.PeyyaDanger
@@ -81,6 +84,7 @@ fun PhoneTripScreen(
     onSkipToday: () -> Unit = {},
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
+    reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -140,134 +144,142 @@ fun PhoneTripScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                if (state.ignitionPromptVisible) {
-                    IgnitionReminderCard(carMode = false)
-                } else {
-                    NowCard(
-                        phaseLabel = "${state.phase.labelKo()} · $done / ${selected.size}",
-                        title = title,
-                        subtitle = subtitle,
-                        nextName = nextPreview?.name,
-                        nextMeta = nextPreview?.let { next ->
-                            val from = arrivedStop
-                            val dist = if (from != null) straightDistanceLabel(from, next) else null
-                            listOfNotNull(shortAddress(next.address), dist).joinToString(" · ")
-                        },
-                        spoken = if (showVoice) state.lastSpoken else null,
-                        onReplay = onIgnition,
-                    )
-                }
-
-                val notice = state.notice
-                if (notice != null && !state.arrivalConfirmVisible) {
-                    Spacer(Modifier.height(16.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            Icons.Rounded.Info,
-                            contentDescription = null,
-                            tint = PeyyaInkSub,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(notice, color = PeyyaInkSub, fontSize = 13.sp)
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    state.trip.title,
-                    color = PeyyaInkDim,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(4.dp))
-                if (state.phase is TripPhase.Idle) {
-                    state.trip.stops.forEach { stop ->
-                        StopSelectRow(
-                            stop = stop,
-                            enabled = true,
-                            onToggle = onToggleStop,
-                        )
-                    }
-                } else {
-                    selected.forEachIndexed { index, stop ->
-                        val stopState = when {
-                            stop.id in doneIds -> StopState.Done
-                            stop.id == focusId -> StopState.Current
-                            else -> StopState.Upcoming
-                        }
-                        val short = shortAddress(stop.address)
-                        val caption = when (stopState) {
-                            StopState.Done -> "$short · 다녀왔어요"
-                            StopState.Current -> when (state.phase) {
-                                is TripPhase.Navigating -> "$short · 지금 가는 곳"
-                                else -> "$short · 다음 장소"
-                            }
-                            StopState.Upcoming -> short
-                        }
-                        StopTimelineRow(
-                            order = index + 1,
-                            name = stop.name,
-                            caption = caption,
-                            state = stopState,
-                            isLast = index == selected.lastIndex,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    state.family.familyName,
-                    color = PeyyaInkDim,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(10.dp))
-                FamilyChips(state.family.members)
-            }
-
-            if (state.ignitionPromptVisible) {
-                IgnitionReminderActions(
-                    onStartDriving = onStartRoute,
-                    onSnoozeLater = { showSnooze = true },
-                    onSkipToday = onSkipToday,
-                    startEnabled = selected.isNotEmpty(),
-                    carMode = false,
+            if (state.showsReviewOrCourseUi()) {
+                PhoneReviewOrCourseOverlay(
+                    state = state,
+                    callbacks = reviewCallbacks,
+                    modifier = Modifier.weight(1f),
                 )
             } else {
-                val primaryLabel = actions.primaryLabel
-                if (primaryLabel != null) {
-                    PrimaryCta(
-                        label = primaryLabel,
-                        enabled = actions.primaryEnabled,
-                        onClick = actions.onPrimary,
-                        demo = actions.primaryIsDemo,
-                    )
-                }
-                if (actions.secondaryLabel != null && actions.onSecondary != null) {
-                    Spacer(Modifier.height(4.dp))
-                    SecondaryCta(actions.secondaryLabel, actions.onSecondary)
-                }
-                if (primaryLabel == null &&
-                    actions.secondaryLabel == null &&
-                    state.phase is TripPhase.Arrived
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
                 ) {
+                    if (state.ignitionPromptVisible) {
+                        IgnitionReminderCard(carMode = false)
+                    } else {
+                        NowCard(
+                            phaseLabel = "${state.phase.labelKo()} · $done / ${selected.size}",
+                            title = title,
+                            subtitle = subtitle,
+                            nextName = nextPreview?.name,
+                            nextMeta = nextPreview?.let { next ->
+                                val from = arrivedStop
+                                val dist = if (from != null) straightDistanceLabel(from, next) else null
+                                listOfNotNull(shortAddress(next.address), dist).joinToString(" · ")
+                            },
+                            spoken = if (showVoice) state.lastSpoken else null,
+                            onReplay = onIgnition,
+                        )
+                    }
+
+                    val notice = state.notice
+                    if (notice != null && !state.arrivalConfirmVisible) {
+                        Spacer(Modifier.height(16.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Info,
+                                contentDescription = null,
+                                tint = PeyyaInkSub,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(notice, color = PeyyaInkSub, fontSize = 13.sp)
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
                     Text(
-                        "다음 제안 대기 중 · 지금은 눌러야 할 버튼이 없어요",
+                        state.trip.title,
                         color = PeyyaInkDim,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
                     )
+                    Spacer(Modifier.height(4.dp))
+                    if (state.phase is TripPhase.Idle) {
+                        state.trip.stops.forEach { stop ->
+                            StopSelectRow(
+                                stop = stop,
+                                enabled = true,
+                                onToggle = onToggleStop,
+                            )
+                        }
+                    } else {
+                        selected.forEachIndexed { index, stop ->
+                            val stopState = when {
+                                stop.id in doneIds -> StopState.Done
+                                stop.id == focusId -> StopState.Current
+                                else -> StopState.Upcoming
+                            }
+                            val short = shortAddress(stop.address)
+                            val caption = when (stopState) {
+                                StopState.Done -> "$short · 다녀왔어요"
+                                StopState.Current -> when (state.phase) {
+                                    is TripPhase.Navigating -> "$short · 지금 가는 곳"
+                                    else -> "$short · 다음 장소"
+                                }
+                                StopState.Upcoming -> short
+                            }
+                            StopTimelineRow(
+                                order = index + 1,
+                                name = stop.name,
+                                caption = caption,
+                                state = stopState,
+                                isLast = index == selected.lastIndex,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        state.family.familyName,
+                        color = PeyyaInkDim,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    FamilyChips(state.family.members)
+                }
+
+                if (state.ignitionPromptVisible) {
+                    IgnitionReminderActions(
+                        onStartDriving = onStartRoute,
+                        onSnoozeLater = { showSnooze = true },
+                        onSkipToday = onSkipToday,
+                        startEnabled = selected.isNotEmpty(),
+                        carMode = false,
+                    )
+                } else {
+                    val primaryLabel = actions.primaryLabel
+                    if (primaryLabel != null) {
+                        PrimaryCta(
+                            label = primaryLabel,
+                            enabled = actions.primaryEnabled,
+                            onClick = actions.onPrimary,
+                            demo = actions.primaryIsDemo,
+                        )
+                    }
+                    if (actions.secondaryLabel != null && actions.onSecondary != null) {
+                        Spacer(Modifier.height(4.dp))
+                        SecondaryCta(actions.secondaryLabel, actions.onSecondary)
+                    }
+                    if (primaryLabel == null &&
+                        actions.secondaryLabel == null &&
+                        state.phase is TripPhase.Arrived
+                    ) {
+                        Text(
+                            "다음 제안 대기 중 · 지금은 눌러야 할 버튼이 없어요",
+                            color = PeyyaInkDim,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }

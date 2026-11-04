@@ -4,6 +4,8 @@ import com.peyya.app.domain.TripPhase
 import com.peyya.app.progress.ArrivalPath
 import com.peyya.app.progress.InMemoryTripProgressStore
 import com.peyya.app.progress.OnTripCompleted
+import com.peyya.app.review.InMemoryReviewStore
+import com.peyya.app.review.ReviewSessionStarter
 import com.peyya.app.service.MockIgnitionGateway
 import com.peyya.app.service.MockNaviGateway
 import com.peyya.app.service.SpeechPort
@@ -37,12 +39,15 @@ class TripViewModelCoordinatorTest {
         ignition: MockIgnitionGateway,
         completed: MutableList<String>,
         clock: () -> Long,
+        reviewStore: InMemoryReviewStore = InMemoryReviewStore(),
     ): TripViewModel = TripViewModel(
         navi = navi,
         ignition = ignition,
         speech = speechNoOp(),
         store = InMemoryTripProgressStore(),
         mockMode = true,
+        reviewStore = reviewStore,
+        reviewSessionStarter = ReviewSessionStarter(reviewStore, clock = clock),
         onTripCompleted = OnTripCompleted { id -> completed += id },
         clock = clock,
         today = { today },
@@ -82,8 +87,6 @@ class TripViewModelCoordinatorTest {
         runCurrent()
         assertTrue(vm.uiState.value.phase is TripPhase.Arrived)
 
-        // Arrived 시 시동이 이미 ON이면 NextLeg는 OFF→ON 또는 5분 유지.
-        // 데모 버튼은 signalIgnition→On. 먼저 OFF 후 ON으로 제안.
         ignition.setOff()
         runCurrent()
         vm.onIgnition()

@@ -3,12 +3,21 @@ package com.peyya.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.peyya.app.data.PresetTrips
+import com.peyya.app.domain.TripPhase
+import com.peyya.app.domain.TripPlan
 import com.peyya.app.progress.CoordinatorState
 import com.peyya.app.progress.OnTripCompleted
 import com.peyya.app.progress.SnoozeChoice
 import com.peyya.app.progress.TripProgressCoordinator
 import com.peyya.app.progress.TripProgressStore
-import com.peyya.app.domain.TripPhase
+import com.peyya.app.review.ActiveReviewUi
+import com.peyya.app.review.CourseCandidate
+import com.peyya.app.review.CourseRecommender
+import com.peyya.app.review.ReviewFlowActions
+import com.peyya.app.review.ReviewSessionStarter
+import com.peyya.app.review.ReviewStore
+import com.peyya.app.review.ReviewSyncPort
+import com.peyya.app.review.ReviewUiStep
 import com.peyya.app.service.IgnitionGateway
 import com.peyya.app.service.NaviGateway
 import com.peyya.app.service.SpeechPort
@@ -23,11 +32,7 @@ import java.time.LocalDate
 /**
  * UI 바인딩 + Coordinator 이벤트 구독.
  * phase/타이머 규칙은 [TripProgressCoordinator]가 소유한다.
- *
- * - [startRoute] / [startDriving]: 운전 시작
- * - [markArrived]: 메뉴 수동 도착 (주 CTA 아님)
- * - [confirmArrivalFromPrompt]: GPS 미확정 알림 확인
- * - [onIgnition]: UI 데모 시동 신호 (실시동 Flow와 병행)
+ * 축2 리뷰·코스 추천은 [ReviewStore] / [CourseRecommender]를 소비한다.
  */
 class TripViewModel(
     private val navi: NaviGateway,
@@ -35,14 +40,21 @@ class TripViewModel(
     private val speech: SpeechPort,
     store: TripProgressStore,
     mockMode: Boolean,
-    onTripCompleted: OnTripCompleted = OnTripCompleted { },
-    clock: () -> Long = { System.currentTimeMillis() },
+    private val reviewStore: ReviewStore,
+    private val reviewSessionStarter: ReviewSessionStarter,
+    private val reviewSync: ReviewSyncPort = ReviewSyncPort.NoOp,
+    private val courseCatalog: List<TripPlan> = listOf(PresetTrips.weekendMuseumTrip),
+    onTripCompleted: OnTripCompleted? = null,
+    private val clock: () -> Long = { System.currentTimeMillis() },
     today: () -> LocalDate = { LocalDate.now() },
     pollIntervalMs: Long = 5_000L,
     tickIntervalMs: Long = 1_000L,
     coroutineScope: CoroutineScope? = null,
 ) : ViewModel() {
     private val scope: CoroutineScope = coroutineScope ?: viewModelScope
+
+    private val wiredOnTripCompleted: OnTripCompleted =
+        onTripCompleted ?: OnTripCompleted { tripId -> onTripCompletedInternal(tripId) }
 
     private val coordinator = TripProgressCoordinator(
         navi = navi,
@@ -51,7 +63,7 @@ class TripViewModel(
         scope = scope,
         clock = clock,
         today = today,
-        onTripCompleted = onTripCompleted,
+        onTripCompleted = wiredOnTripCompleted,
         pollIntervalMs = pollIntervalMs,
         tickIntervalMs = tickIntervalMs,
     )
@@ -65,7 +77,12 @@ class TripViewModel(
     )
     val uiState: StateFlow<TripUiState> = _uiState.asStateFlow()
 
+    private var reviewStartedAtEpochMs: Long = 0L
+    /** 사용자가 코스 카드를 닫으면 같은 Idle 동안 재노출하지 않는다. */
+    private var courseOfferDismissed: Boolean = false
+
     init {
+        refreshCourseOffer()
         coordinator.bindTrip(_uiState.value.trip)
         scope.launch {
             coordinator.state.collect { progress -> applyProgress(progress) }
@@ -81,11 +98,11 @@ class TripViewModel(
 
     fun toggleStop(stopId: String, selected: Boolean) {
         if (_uiState.value.phase !is TripPhase.Idle) return
+        if (_uiState.value.courseOffer != null) return
         _uiState.update { it.copy(trip = it.trip.withStopSelection(stopId, selected)) }
         coordinator.bindTrip(_uiState.value.trip)
     }
 
-    /** 운전 시작 (시동 리마인드 CTA / Idle 주 CTA). */
     fun startRoute() {
         startDriving()
     }
@@ -95,10 +112,6 @@ class TripViewModel(
         coordinator.startDriving()
     }
 
-    /**
-     * 메뉴 「도착으로 표시」.
-     * 안내 중 주 영역의 상시 「도착했어요」가 아닌 오버플로/설정용.
-     */
     fun markArrived() {
         markArrivedFromMenu()
     }
@@ -123,7 +136,6 @@ class TripViewModel(
         coordinator.snooze(choice)
     }
 
-    /** 예약 시각을 설정한 뒤 [SnoozeChoice.AtReservation] 스누즈. */
     fun snoozeReservation(atEpochMs: Long) {
         coordinator.setReservationAt(atEpochMs)
         coordinator.snooze(SnoozeChoice.AtReservation)
@@ -133,11 +145,6 @@ class TripViewModel(
         coordinator.skipToday()
     }
 
-    /**
-     * UI 데모 「시동 걸기」.
-     * Mock에서는 [IgnitionGateway.signalIgnition]이 ON Flow를 갱신하고,
-     * Coordinator가 NextLeg / 리마인드 정책을 적용한다.
-     */
     fun onIgnition() {
         ignition.signalIgnition()
     }
@@ -148,9 +155,12 @@ class TripViewModel(
         _uiState.update {
             it.copy(
                 trip = trip,
+                review = null,
+                courseAppliedConfirm = false,
                 snackbar = "일정을 초기화했습니다. 다시 시작할 수 있습니다.",
             )
         }
+        refreshCourseOffer()
     }
 
     fun consumeSnackbar() {
@@ -165,12 +175,189 @@ class TripViewModel(
         coordinator.skipNext()
     }
 
+    // --- 축2 리뷰 ---
+
+    fun beginReviewRating() {
+        val review = _uiState.value.review ?: return
+        if (review.step != ReviewUiStep.Intro) return
+        _uiState.update { it.copy(review = ReviewFlowActions.beginRating(review)) }
+    }
+
+    fun skipReviewSession() {
+        val review = _uiState.value.review ?: return
+        val now = clock()
+        val session = ReviewFlowActions.toSkippedSession(
+            ui = review,
+            startedAtEpochMs = reviewStartedAtEpochMs,
+            completedAtEpochMs = now,
+        )
+        reviewStore.save(session)
+        runCatching { reviewSync.sync(session) }
+        _uiState.update { it.copy(review = null) }
+        refreshCourseOffer()
+    }
+
+    fun setReviewStars(stars: Int) {
+        val review = _uiState.value.review ?: return
+        if (review.step != ReviewUiStep.Rating) return
+        _uiState.update { it.copy(review = ReviewFlowActions.setStars(review, stars)) }
+    }
+
+    fun setReviewComment(comment: String) {
+        val review = _uiState.value.review ?: return
+        if (review.step != ReviewUiStep.Rating) return
+        _uiState.update { it.copy(review = ReviewFlowActions.setComment(review, comment)) }
+    }
+
+    fun commitReviewStop(carMode: Boolean = false) {
+        val review = _uiState.value.review ?: return
+        when (
+            val result = ReviewFlowActions.commitCurrentStop(
+                ui = review,
+                nowEpochMs = clock(),
+                carModeSkipsSubmitted = carMode,
+            )
+        ) {
+            ReviewFlowActions.CommitResult.Ignored -> Unit
+            ReviewFlowActions.CommitResult.NeedsStars -> {
+                _uiState.update { it.copy(snackbar = "별점을 선택해 주세요.") }
+            }
+            is ReviewFlowActions.CommitResult.Advanced -> {
+                _uiState.update { it.copy(review = result.ui) }
+            }
+            is ReviewFlowActions.CommitResult.Finished -> {
+                persistCompletedReview(result.collected, result.nextUi)
+            }
+        }
+    }
+
+    fun skipReviewStop(carMode: Boolean = false) {
+        val review = _uiState.value.review ?: return
+        when (
+            val result = ReviewFlowActions.skipCurrentStop(
+                ui = review,
+                carModeSkipsSubmitted = carMode,
+            )
+        ) {
+            is ReviewFlowActions.CommitResult.Advanced -> {
+                _uiState.update { it.copy(review = result.ui) }
+            }
+            is ReviewFlowActions.CommitResult.Finished -> {
+                persistCompletedReview(result.collected, result.nextUi)
+            }
+            else -> Unit
+        }
+    }
+
+    fun acknowledgeReviewSubmitted() {
+        val review = _uiState.value.review ?: return
+        if (review.step != ReviewUiStep.Submitted) return
+        returnToIdleAfterReview()
+    }
+
+    // --- 축2 코스 추천 ---
+
+    fun dismissCourseOffer() {
+        courseOfferDismissed = true
+        _uiState.update { it.copy(courseOffer = null) }
+    }
+
+    fun applyCourseOffer() {
+        val candidate = _uiState.value.courseOffer ?: return
+        courseOfferDismissed = true
+        applyCandidate(candidate)
+    }
+
+    fun acknowledgeCourseApplied() {
+        _uiState.update { it.copy(courseAppliedConfirm = false) }
+    }
+
     override fun onCleared() {
         coordinator.stop()
         navi.release()
         ignition.release()
         speech.shutdown()
         super.onCleared()
+    }
+
+    private fun onTripCompletedInternal(tripId: String) {
+        if (_uiState.value.review != null) return
+        val trip = _uiState.value.trip
+        val session = reviewSessionStarter.start(
+            tripId = tripId.ifEmpty { trip.id },
+            tripTitle = trip.title,
+        )
+        reviewStartedAtEpochMs = session.startedAtEpochMs
+        val selected = trip.selectedStops().ifEmpty { trip.stops }
+        _uiState.update {
+            it.copy(review = ReviewFlowActions.fromSession(session, selected))
+        }
+    }
+
+    private fun persistCompletedReview(
+        collected: List<com.peyya.app.review.StopReview>,
+        nextUi: ActiveReviewUi?,
+    ) {
+        val base = _uiState.value.review ?: return
+        val finishedUi = base.copy(collected = collected)
+        val now = clock()
+        val session = ReviewFlowActions.toCompletedSession(
+            ui = finishedUi,
+            startedAtEpochMs = reviewStartedAtEpochMs,
+            completedAtEpochMs = now,
+        )
+        reviewStore.save(session)
+        runCatching { reviewSync.sync(session) }
+        if (nextUi == null) {
+            returnToIdleAfterReview(snackbar = "리뷰를 저장했어요.")
+        } else {
+            _uiState.update {
+                it.copy(review = nextUi.copy(collected = collected))
+            }
+        }
+    }
+
+    private fun returnToIdleAfterReview(snackbar: String? = "리뷰를 저장했어요.") {
+        val trip = _uiState.value.trip
+        courseOfferDismissed = false
+        coordinator.reset(trip)
+        _uiState.update {
+            it.copy(
+                trip = trip,
+                review = null,
+                snackbar = snackbar,
+            )
+        }
+        refreshCourseOffer()
+    }
+
+    private fun applyCandidate(candidate: CourseCandidate) {
+        val newTrip = TripPlan(
+            id = candidate.courseId,
+            title = candidate.title,
+            stops = candidate.stops.map { it.copy(selected = true) },
+        )
+        coordinator.reset(newTrip)
+        _uiState.update {
+            it.copy(
+                trip = newTrip,
+                courseOffer = null,
+                courseAppliedConfirm = true,
+                review = null,
+                snackbar = null,
+            )
+        }
+    }
+
+    private fun refreshCourseOffer() {
+        _uiState.update { state ->
+            if (state.review != null || courseOfferDismissed) {
+                state.copy(courseOffer = null)
+            } else {
+                val top = CourseRecommender.recommend(reviewStore, courseCatalog).firstOrNull()
+                state.copy(courseOffer = top)
+            }
+        }
     }
 
     private fun applyProgress(progress: CoordinatorState) {
@@ -189,6 +376,9 @@ class TripViewModel(
                 skipTodayDate = progress.skipTodayDate,
                 lastArrivalPath = progress.lastArrivalPath,
             )
+        }
+        if (progress.phase is TripPhase.Idle && _uiState.value.review == null) {
+            refreshCourseOffer()
         }
     }
 }

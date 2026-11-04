@@ -4,6 +4,8 @@ import com.peyya.app.domain.FamilyProfile
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.TripPlan
 import com.peyya.app.progress.ArrivalPath
+import com.peyya.app.review.ActiveReviewUi
+import com.peyya.app.review.CourseCandidate
 import java.time.LocalDate
 
 data class TripUiState(
@@ -21,4 +23,10 @@ data class TripUiState(
     val snoozeUntilEpochMs: Long? = null,
     val skipTodayDate: LocalDate? = null,
     val lastArrivalPath: ArrivalPath? = null,
+    /** Completed 후 「오늘 하루는 어땠나요?」세션. null이면 비활성 */
+    val review: ActiveReviewUi? = null,
+    /** Idle에서 M·N 충족 시 상위 코스 후보 1개. null이면 카드 숨김 */
+    val courseOffer: CourseCandidate? = null,
+    /** 폰 C2 — 코스 적용 확인 */
+    val courseAppliedConfirm: Boolean = false,
 )

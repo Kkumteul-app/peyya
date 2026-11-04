@@ -57,6 +57,9 @@ import com.peyya.app.ui.components.IgnitionReminderCard
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SnoozePicker
 import com.peyya.app.ui.components.StopState
+import com.peyya.app.ui.review.CarReviewOrCoursePane
+import com.peyya.app.ui.review.ReviewFlowCallbacks
+import com.peyya.app.ui.review.showsReviewOrCourseUi
 import com.peyya.app.ui.theme.CarBg
 import com.peyya.app.ui.theme.CarBrandLight
 import com.peyya.app.ui.theme.CarCard
@@ -84,6 +87,7 @@ fun CarTripScreen(
     onSkipToday: () -> Unit = {},
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
+    reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -101,6 +105,8 @@ fun CarTripScreen(
         showSnooze -> "오늘 루트 · 나중에 확인"
         state.ignitionPromptVisible -> "오늘 루트 · 시동 리마인드"
         state.arrivalConfirmVisible -> "오늘 루트 · 안내 중"
+        state.review != null -> "루트 완료 · 리뷰"
+        state.courseOffer != null && state.phase is TripPhase.Idle -> "Idle · 코스 추천"
         else -> null
     }
 
@@ -126,6 +132,13 @@ fun CarTripScreen(
                 .padding(horizontal = 56.dp, vertical = 48.dp),
         ) {
             when {
+                state.showsReviewOrCourseUi() -> {
+                    CarReviewOrCoursePane(
+                        state = state,
+                        callbacks = reviewCallbacks,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
                 showSnooze -> {
                     SnoozePicker(
                         onSnooze = onSnooze,

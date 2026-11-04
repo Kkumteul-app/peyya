@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import com.peyya.app.progress.SnoozeChoice
+import com.peyya.app.ui.review.ReviewFlowCallbacks
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -29,6 +30,7 @@ fun TripScreen(
     onSkipToday: () -> Unit = {},
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
+    reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
 ) {
     if (isCarLayout()) {
         CarTripScreen(
@@ -45,6 +47,7 @@ fun TripScreen(
             onSkipToday = onSkipToday,
             onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
             onDismissArrivalConfirm = onDismissArrivalConfirm,
+            reviewCallbacks = reviewCallbacks,
         )
     } else {
         PhoneTripScreen(
@@ -61,6 +64,7 @@ fun TripScreen(
             onSkipToday = onSkipToday,
             onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
             onDismissArrivalConfirm = onDismissArrivalConfirm,
+            reviewCallbacks = reviewCallbacks,
         )
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.peyya.app.ui.review.ReviewFlowCallbacks
 import com.peyya.app.ui.theme.PeyyaTheme
 import com.peyya.app.viewmodel.TripViewModel
 import com.peyya.app.viewmodel.TripViewModelFactory
@@ -31,6 +32,20 @@ fun PeyyaApp(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val carMode = isCarLayout()
     val snackbarHostState = remember { SnackbarHostState() }
+    val reviewCallbacks = remember(carMode, viewModel) {
+        ReviewFlowCallbacks(
+            onBeginReview = viewModel::beginReviewRating,
+            onSkipReviewSession = viewModel::skipReviewSession,
+            onSetReviewStars = viewModel::setReviewStars,
+            onSetReviewComment = viewModel::setReviewComment,
+            onCommitReviewStop = { viewModel.commitReviewStop(carMode = carMode) },
+            onSkipReviewStop = { viewModel.skipReviewStop(carMode = carMode) },
+            onAcknowledgeReviewSubmitted = viewModel::acknowledgeReviewSubmitted,
+            onApplyCourse = viewModel::applyCourseOffer,
+            onDismissCourse = viewModel::dismissCourseOffer,
+            onAcknowledgeCourseApplied = viewModel::acknowledgeCourseApplied,
+        )
+    }
 
     LaunchedEffect(state.snackbar) {
         val message = state.snackbar ?: return@LaunchedEffect
@@ -54,6 +69,7 @@ fun PeyyaApp(
                 onSkipToday = viewModel::skipToday,
                 onConfirmArrivalFromPrompt = viewModel::confirmArrivalFromPrompt,
                 onDismissArrivalConfirm = viewModel::dismissArrivalConfirm,
+                reviewCallbacks = reviewCallbacks,
             )
             SnackbarHost(
                 hostState = snackbarHostState,
