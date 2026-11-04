@@ -67,4 +67,36 @@ dependencies {
     implementation(libs.pleos.vehicle)
 
     debugImplementation(libs.androidx.ui.tooling)
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+}
+
+// Windows + non-ASCII project path: Gradle Test worker can fail to load
+// classes from directories under the Korean workspace path (CNFE).
+// Remap unit-test outputs to an ASCII temp dir before the worker starts.
+afterEvaluate {
+    tasks.named<Test>("testDebugUnitTest").configure {
+        val asciiClassesDir = file("${System.getProperty("java.io.tmpdir")}/peyya-debugUnitTest-classes")
+        doFirst {
+            asciiClassesDir.deleteRecursively()
+            asciiClassesDir.mkdirs()
+            val kotlinOut = layout.buildDirectory.dir("tmp/kotlin-classes/debugUnitTest").get().asFile
+            if (kotlinOut.exists()) {
+                kotlinOut.copyRecursively(asciiClassesDir, overwrite = true)
+            }
+            val javacOut = layout.buildDirectory
+                .dir("intermediates/javac/debugUnitTest/compileDebugUnitTestJavaWithJavac/classes")
+                .get()
+                .asFile
+            if (javacOut.exists()) {
+                javacOut.copyRecursively(asciiClassesDir, overwrite = true)
+            }
+            classpath = files(asciiClassesDir) + classpath.filter { entry ->
+                val normalized = entry.absolutePath.replace('\\', '/')
+                !normalized.contains("/kotlin-classes/debugUnitTest") &&
+                    !normalized.contains("/javac/debugUnitTest/")
+            }
+        }
+    }
 }

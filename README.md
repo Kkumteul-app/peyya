@@ -24,6 +24,7 @@ adb shell am start -n com.peyya.app/.MainActivity --ez force_mock true
 - JDK 17, Android compileSdk 35 / minSdk 28
 - Mock 모드: Pleos NaviHelper 초기화 실패 시 자동 (폰 데모·영상용)
 - Pleos 실연동: Pleos Connect Emulator + Maven `nexus-playground.pleos.ai`
+- 도메인 순수 Kotlin은 `app/src/test/java` JVM 단위 테스트로 돌린다: `gradlew.bat :app:testDebugUnitTest`
 
 ## APK 위치
 
