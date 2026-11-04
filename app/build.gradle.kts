@@ -48,6 +48,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -74,28 +78,32 @@ dependencies {
 
 // Windows + non-ASCII project path: Gradle Test worker can fail to load
 // classes from directories under the Korean workspace path (CNFE).
-// Remap unit-test outputs to an ASCII temp dir before the worker starts.
+// Remap main + unit-test outputs to an ASCII temp dir before the worker starts.
 afterEvaluate {
     tasks.named<Test>("testDebugUnitTest").configure {
         val asciiClassesDir = file("${System.getProperty("java.io.tmpdir")}/peyya-debugUnitTest-classes")
         doFirst {
             asciiClassesDir.deleteRecursively()
             asciiClassesDir.mkdirs()
-            val kotlinOut = layout.buildDirectory.dir("tmp/kotlin-classes/debugUnitTest").get().asFile
-            if (kotlinOut.exists()) {
-                kotlinOut.copyRecursively(asciiClassesDir, overwrite = true)
+            fun copyClasses(relativeDir: String) {
+                val dir = layout.buildDirectory.dir(relativeDir).get().asFile
+                if (dir.exists()) {
+                    dir.copyRecursively(asciiClassesDir, overwrite = true)
+                }
             }
-            val javacOut = layout.buildDirectory
-                .dir("intermediates/javac/debugUnitTest/compileDebugUnitTestJavaWithJavac/classes")
-                .get()
-                .asFile
-            if (javacOut.exists()) {
-                javacOut.copyRecursively(asciiClassesDir, overwrite = true)
-            }
+            // Main first, then unit tests (tests may shadow nothing but order is stable).
+            copyClasses("tmp/kotlin-classes/debug")
+            copyClasses("intermediates/javac/debug/compileDebugJavaWithJavac/classes")
+            copyClasses("tmp/kotlin-classes/debugUnitTest")
+            copyClasses(
+                "intermediates/javac/debugUnitTest/compileDebugUnitTestJavaWithJavac/classes",
+            )
             classpath = files(asciiClassesDir) + classpath.filter { entry ->
                 val normalized = entry.absolutePath.replace('\\', '/')
-                !normalized.contains("/kotlin-classes/debugUnitTest") &&
-                    !normalized.contains("/javac/debugUnitTest/")
+                !normalized.contains("/kotlin-classes/debug") &&
+                    !normalized.contains("/javac/debug") &&
+                    !normalized.contains("/bundleDebugClassesToRuntimeJar") &&
+                    !normalized.contains("/bundleDebugClassesToCompileJar")
             }
         }
     }
