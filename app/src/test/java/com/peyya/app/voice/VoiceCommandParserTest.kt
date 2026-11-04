@@ -31,6 +31,16 @@ class VoiceCommandParserTest {
     }
 
     @Test
+    fun chipUtterances_matchParser() {
+        assertEquals(VoiceCommand.ConfirmNext, VoiceCommandParser.parse(VoiceSimUtterances.NEXT))
+        assertEquals(VoiceCommand.Skip, VoiceCommandParser.parse(VoiceSimUtterances.SKIP))
+        assertEquals(VoiceCommand.Keep, VoiceCommandParser.parse(VoiceSimUtterances.KEEP))
+        assertEquals("다음으로", VoiceSimUtterances.NEXT)
+        assertEquals("건너뛰기", VoiceSimUtterances.SKIP)
+        assertEquals("유지", VoiceSimUtterances.KEEP)
+    }
+
+    @Test
     fun simulator_utterance_mapsToConfirmNext() {
         val sim = VoiceCommandSimulator()
         val command = sim.simulate("다음으로")

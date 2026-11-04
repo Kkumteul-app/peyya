@@ -21,6 +21,7 @@ import com.peyya.app.review.ReviewUiStep
 import com.peyya.app.service.IgnitionGateway
 import com.peyya.app.service.NaviGateway
 import com.peyya.app.service.SpeechPort
+import com.peyya.app.voice.DrivingEditLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,6 +81,7 @@ class TripViewModel(
     private var reviewStartedAtEpochMs: Long = 0L
     /** 사용자가 코스 카드를 닫으면 같은 Idle 동안 재노출하지 않는다. */
     private var courseOfferDismissed: Boolean = false
+    private val adaptVoice = AdaptVoiceSession(navi = navi)
 
     init {
         refreshCourseOffer()
@@ -97,7 +99,7 @@ class TripViewModel(
     }
 
     fun toggleStop(stopId: String, selected: Boolean) {
-        if (_uiState.value.phase !is TripPhase.Idle) return
+        if (!DrivingEditLock.isEditingAllowed(_uiState.value.phase)) return
         if (_uiState.value.courseOffer != null) return
         _uiState.update { it.copy(trip = it.trip.withStopSelection(stopId, selected)) }
         coordinator.bindTrip(_uiState.value.trip)
@@ -151,16 +153,59 @@ class TripViewModel(
 
     fun resetTrip() {
         val trip = PresetTrips.weekendMuseumTrip
+        adaptVoice.reset()
         coordinator.reset(trip)
         _uiState.update {
             it.copy(
                 trip = trip,
                 review = null,
                 courseAppliedConfirm = false,
+                adaptSuggestion = null,
                 snackbar = "일정을 초기화했습니다. 다시 시작할 수 있습니다.",
             )
         }
         refreshCourseOffer()
+    }
+
+    fun acceptAdaptCandidate(candidateId: String) {
+        val suggestion = _uiState.value.adaptSuggestion ?: return
+        when (val result = adaptVoice.acceptCandidate(suggestion, candidateId)) {
+            AdaptVoiceSession.AcceptResult.Ignored -> Unit
+            is AdaptVoiceSession.AcceptResult.Routed -> {
+                _uiState.update {
+                    it.copy(
+                        adaptSuggestion = null,
+                        snackbar = "${result.name}으로 안내합니다.",
+                    )
+                }
+            }
+            is AdaptVoiceSession.AcceptResult.Failed -> {
+                _uiState.update {
+                    it.copy(snackbar = "${result.name} 안내를 시작하지 못했어요.")
+                }
+            }
+        }
+    }
+
+    fun dismissAdaptSuggestion() {
+        adaptVoice.dismiss(_uiState.value.adaptSuggestion)
+        _uiState.update { it.copy(adaptSuggestion = null) }
+    }
+
+    fun simulateVoiceUtterance(utterance: String) {
+        when (val effect = adaptVoice.onVoiceUtterance(_uiState.value.phase, utterance)) {
+            AdaptVoiceSession.VoiceEffect.ConfirmNext -> confirmNext()
+            AdaptVoiceSession.VoiceEffect.SkipNext -> skipNext()
+            AdaptVoiceSession.VoiceEffect.Keep -> {
+                adaptVoice.dismiss(_uiState.value.adaptSuggestion)
+                _uiState.update {
+                    it.copy(adaptSuggestion = null, snackbar = "지금 안내를 유지합니다.")
+                }
+            }
+            is AdaptVoiceSession.VoiceEffect.Message -> {
+                _uiState.update { it.copy(snackbar = effect.text) }
+            }
+        }
     }
 
     fun consumeSnackbar() {
@@ -365,6 +410,7 @@ class TripViewModel(
         if (!spoken.isNullOrEmpty() && spoken != _uiState.value.lastSpoken) {
             speech.speak(spoken)
         }
+        val adapt = adaptVoice.syncSuggestion(progress.phase)
         _uiState.update { state ->
             state.copy(
                 phase = progress.phase,
@@ -375,6 +421,7 @@ class TripViewModel(
                 snoozeUntilEpochMs = progress.snoozeUntilEpochMs,
                 skipTodayDate = progress.skipTodayDate,
                 lastArrivalPath = progress.lastArrivalPath,
+                adaptSuggestion = adapt,
             )
         }
         if (progress.phase is TripPhase.Idle && _uiState.value.review == null) {

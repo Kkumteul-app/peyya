@@ -47,6 +47,10 @@ import com.peyya.app.domain.AgeBand
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
 import com.peyya.app.progress.SnoozeChoice
+import com.peyya.app.ui.adapt.AdaptSuggestionPanel
+import com.peyya.app.ui.adapt.AdaptUiVisibility
+import com.peyya.app.ui.booking.BookingPrepSection
+import com.peyya.app.ui.booking.BookingUiVisibility
 import com.peyya.app.ui.components.ArrivalConfirmBanner
 import com.peyya.app.ui.components.CarOutlinedCta
 import com.peyya.app.ui.components.CarStopSelectRow
@@ -70,6 +74,9 @@ import com.peyya.app.ui.theme.CarPanel
 import com.peyya.app.ui.theme.CarText
 import com.peyya.app.ui.theme.CarTextSub
 import com.peyya.app.ui.theme.PeyyaDanger
+import com.peyya.app.ui.voice.EditLockHint
+import com.peyya.app.ui.voice.VoiceSimChips
+import com.peyya.app.ui.voice.VoiceUiVisibility
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -88,6 +95,9 @@ fun CarTripScreen(
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
     reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
+    onAcceptAdapt: (String) -> Unit = {},
+    onDismissAdapt: () -> Unit = {},
+    onSimulateVoice: (String) -> Unit = {},
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -186,6 +196,9 @@ fun CarTripScreen(
                             onMarkArrived()
                         },
                         onIgnition = onIgnition,
+                        onAcceptAdapt = onAcceptAdapt,
+                        onDismissAdapt = onDismissAdapt,
+                        onSimulateVoice = onSimulateVoice,
                     )
                 }
             }
@@ -224,160 +237,189 @@ private fun CarDefaultRightPane(
     onReset: () -> Unit,
     onMarkArrived: () -> Unit,
     onIgnition: () -> Unit,
+    onAcceptAdapt: (String) -> Unit,
+    onDismissAdapt: () -> Unit,
+    onSimulateVoice: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                state.phase.labelKo(),
+                color = CarBrandLight,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Box {
+                IconButton(onClick = onMenuExpand, modifier = Modifier.size(64.dp)) {
+                    Icon(
+                        Icons.Rounded.MoreVert,
+                        contentDescription = "더보기",
+                        tint = CarTextSub,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
+                    DropdownMenuItem(
+                        text = { Text("일정 처음부터 다시", fontSize = 18.sp) },
+                        onClick = onReset,
+                    )
+                    if (state.phase is TripPhase.Navigating) {
+                        DropdownMenuItem(
+                            text = { Text("도착으로 표시", fontSize = 18.sp) },
+                            onClick = onMarkArrived,
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
         Text(
-            state.phase.labelKo(),
-            color = CarBrandLight,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
+            title,
+            color = CarText,
+            style = MaterialTheme.typography.displaySmall,
         )
-        Box {
-            IconButton(onClick = onMenuExpand, modifier = Modifier.size(64.dp)) {
+        if (addressLine != null) {
+            Spacer(Modifier.height(20.dp))
+            Text(
+                addressLine,
+                color = CarTextSub,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        if (showVoice) {
+            Spacer(Modifier.height(36.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(CarCard)
+                    .padding(start = 24.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 Icon(
-                    Icons.Rounded.MoreVert,
-                    contentDescription = "더보기",
-                    tint = CarTextSub,
+                    Icons.AutoMirrored.Rounded.VolumeUp,
+                    contentDescription = null,
+                    tint = CarBrandLight,
                     modifier = Modifier.size(28.dp),
                 )
-            }
-            DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
-                DropdownMenuItem(
-                    text = { Text("일정 처음부터 다시", fontSize = 18.sp) },
-                    onClick = onReset,
+                Text(
+                    "「${state.lastSpoken}」",
+                    color = CarText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
                 )
-                if (state.phase is TripPhase.Navigating) {
-                    DropdownMenuItem(
-                        text = { Text("도착으로 표시", fontSize = 18.sp) },
-                        onClick = onMarkArrived,
+                IconButton(
+                    onClick = onIgnition,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .border(1.dp, CarLineStrong, RoundedCornerShape(16.dp)),
+                ) {
+                    Icon(
+                        Icons.Rounded.Replay,
+                        contentDescription = "다시 듣기",
+                        tint = CarText,
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
         }
-    }
-    Spacer(Modifier.height(14.dp))
-    Text(
-        title,
-        color = CarText,
-        style = MaterialTheme.typography.displaySmall,
-    )
-    if (addressLine != null) {
-        Spacer(Modifier.height(20.dp))
-        Text(
-            addressLine,
-            color = CarTextSub,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-    if (showVoice) {
-        Spacer(Modifier.height(36.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(CarCard)
-                .padding(start = 24.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Rounded.VolumeUp,
-                contentDescription = null,
-                tint = CarBrandLight,
-                modifier = Modifier.size(28.dp),
+
+        // Idle 예매 카드는 좌측 타임라인. 우측은 상세(안내·도착·다음)만.
+        val bookingStops = if (state.phase is TripPhase.Idle) {
+            emptyList()
+        } else {
+            BookingUiVisibility.visibleBookingStops(state.phase, state.trip)
+        }
+        if (bookingStops.isNotEmpty()) {
+            Spacer(Modifier.height(20.dp))
+            BookingPrepSection(stops = bookingStops, carMode = true)
+        }
+        val adapt = state.adaptSuggestion
+        if (AdaptUiVisibility.showsAdaptPanel(state.phase, adapt) && adapt != null) {
+            Spacer(Modifier.height(20.dp))
+            AdaptSuggestionPanel(
+                suggestion = adapt,
+                carMode = true,
+                onAccept = onAcceptAdapt,
+                onDismiss = onDismissAdapt,
             )
-            Text(
-                "「${state.lastSpoken}」",
-                color = CarText,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(
-                onClick = onIgnition,
+        }
+        if (VoiceUiVisibility.showsVoiceSimChips(state.phase, state.mockMode)) {
+            Spacer(Modifier.height(20.dp))
+            VoiceSimChips(carMode = true, onSimulate = onSimulateVoice)
+        }
+
+        Spacer(Modifier.weight(1f))
+        val notice = state.notice
+        if (notice != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .size(64.dp)
-                    .border(1.dp, CarLineStrong, RoundedCornerShape(16.dp)),
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
-                    Icons.Rounded.Replay,
-                    contentDescription = "다시 듣기",
-                    tint = CarText,
-                    modifier = Modifier.size(28.dp),
+                    Icons.Rounded.Info,
+                    contentDescription = null,
+                    tint = CarTextSub,
+                    modifier = Modifier.size(22.dp),
                 )
+                Text(notice, color = CarTextSub, fontSize = 18.sp)
             }
         }
-    }
-    Spacer(Modifier.weight(1f))
-    val notice = state.notice
-    if (notice != null) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                Icons.Rounded.Info,
-                contentDescription = null,
-                tint = CarTextSub,
-                modifier = Modifier.size(22.dp),
-            )
-            Text(notice, color = CarTextSub, fontSize = 18.sp)
-        }
-    }
-    val primaryLabel = actions.primaryLabel
-    val secondaryLabel = actions.secondaryLabel
-    val onSecondary = actions.onSecondary
-    when {
-        primaryLabel != null && secondaryLabel != null && onSecondary != null -> {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
+        val primaryLabel = actions.primaryLabel
+        val secondaryLabel = actions.secondaryLabel
+        val onSecondary = actions.onSecondary
+        when {
+            primaryLabel != null && secondaryLabel != null && onSecondary != null -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    PrimaryCta(
+                        label = primaryLabel,
+                        enabled = actions.primaryEnabled,
+                        onClick = actions.onPrimary,
+                        demo = actions.primaryIsDemo,
+                        modifier = Modifier.weight(2f),
+                        height = 84.dp,
+                        corner = 20.dp,
+                        textSize = 26.sp,
+                        textWeight = FontWeight.ExtraBold,
+                    )
+                    CarOutlinedCta(
+                        label = secondaryLabel,
+                        onClick = onSecondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            primaryLabel != null -> {
                 PrimaryCta(
                     label = primaryLabel,
                     enabled = actions.primaryEnabled,
                     onClick = actions.onPrimary,
                     demo = actions.primaryIsDemo,
-                    modifier = Modifier.weight(2f),
                     height = 84.dp,
                     corner = 20.dp,
                     textSize = 26.sp,
                     textWeight = FontWeight.ExtraBold,
                 )
+            }
+            secondaryLabel != null && onSecondary != null -> {
                 CarOutlinedCta(
                     label = secondaryLabel,
                     onClick = onSecondary,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
-        primaryLabel != null -> {
-            PrimaryCta(
-                label = primaryLabel,
-                enabled = actions.primaryEnabled,
-                onClick = actions.onPrimary,
-                demo = actions.primaryIsDemo,
-                height = 84.dp,
-                corner = 20.dp,
-                textSize = 26.sp,
-                textWeight = FontWeight.ExtraBold,
-            )
-        }
-        secondaryLabel != null && onSecondary != null -> {
-            CarOutlinedCta(
-                label = secondaryLabel,
-                onClick = onSecondary,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
     }
 }
 
@@ -485,6 +527,20 @@ private fun RouteTimelinePane(
                     state.trip.stops.forEach { stop ->
                         CarStopSelectRow(stop = stop, onToggle = onToggleStop)
                     }
+                    val idleBooking = BookingUiVisibility.visibleBookingStops(
+                        state.phase,
+                        state.trip,
+                    )
+                    if (idleBooking.isNotEmpty()) {
+                        Spacer(Modifier.height(20.dp))
+                        BookingPrepSection(stops = idleBooking, carMode = true)
+                    }
+                }
+                if (VoiceUiVisibility.showsEditLockHint(state.phase) &&
+                    state.phase !is TripPhase.Idle
+                ) {
+                    Spacer(Modifier.height(12.dp))
+                    EditLockHint(carMode = true)
                 }
             }
             Column {

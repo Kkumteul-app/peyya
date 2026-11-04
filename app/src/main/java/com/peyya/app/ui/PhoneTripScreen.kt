@@ -47,6 +47,10 @@ import androidx.compose.ui.unit.sp
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
 import com.peyya.app.progress.SnoozeChoice
+import com.peyya.app.ui.adapt.AdaptSuggestionPanel
+import com.peyya.app.ui.adapt.AdaptUiVisibility
+import com.peyya.app.ui.booking.BookingPrepSection
+import com.peyya.app.ui.booking.BookingUiVisibility
 import com.peyya.app.ui.components.ArrivalConfirmBanner
 import com.peyya.app.ui.components.DemoBadge
 import com.peyya.app.ui.components.FamilyChips
@@ -67,6 +71,9 @@ import com.peyya.app.ui.theme.PeyyaDanger
 import com.peyya.app.ui.theme.PeyyaInk
 import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
+import com.peyya.app.ui.voice.EditLockHint
+import com.peyya.app.ui.voice.VoiceSimChips
+import com.peyya.app.ui.voice.VoiceUiVisibility
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -85,6 +92,9 @@ fun PhoneTripScreen(
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
     reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
+    onAcceptAdapt: (String) -> Unit = {},
+    onDismissAdapt: () -> Unit = {},
+    onSimulateVoice: (String) -> Unit = {},
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -209,6 +219,10 @@ fun PhoneTripScreen(
                             )
                         }
                     } else {
+                        if (VoiceUiVisibility.showsEditLockHint(state.phase)) {
+                            EditLockHint(carMode = false)
+                            Spacer(Modifier.height(8.dp))
+                        }
                         selected.forEachIndexed { index, stop ->
                             val stopState = when {
                                 stop.id in doneIds -> StopState.Done
@@ -232,6 +246,31 @@ fun PhoneTripScreen(
                                 isLast = index == selected.lastIndex,
                             )
                         }
+                    }
+
+                    val bookingStops = BookingUiVisibility.visibleBookingStops(
+                        state.phase,
+                        state.trip,
+                    )
+                    if (bookingStops.isNotEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        BookingPrepSection(stops = bookingStops, carMode = false)
+                    }
+
+                    val adapt = state.adaptSuggestion
+                    if (AdaptUiVisibility.showsAdaptPanel(state.phase, adapt) && adapt != null) {
+                        Spacer(Modifier.height(16.dp))
+                        AdaptSuggestionPanel(
+                            suggestion = adapt,
+                            carMode = false,
+                            onAccept = onAcceptAdapt,
+                            onDismiss = onDismissAdapt,
+                        )
+                    }
+
+                    if (VoiceUiVisibility.showsVoiceSimChips(state.phase, state.mockMode)) {
+                        Spacer(Modifier.height(16.dp))
+                        VoiceSimChips(carMode = false, onSimulate = onSimulateVoice)
                     }
 
                     Spacer(Modifier.height(16.dp))

@@ -31,6 +31,9 @@ fun TripScreen(
     onConfirmArrivalFromPrompt: () -> Unit = {},
     onDismissArrivalConfirm: () -> Unit = {},
     reviewCallbacks: ReviewFlowCallbacks = ReviewFlowCallbacks(),
+    onAcceptAdapt: (String) -> Unit = {},
+    onDismissAdapt: () -> Unit = {},
+    onSimulateVoice: (String) -> Unit = {},
 ) {
     if (isCarLayout()) {
         CarTripScreen(
@@ -48,6 +51,9 @@ fun TripScreen(
             onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
             onDismissArrivalConfirm = onDismissArrivalConfirm,
             reviewCallbacks = reviewCallbacks,
+            onAcceptAdapt = onAcceptAdapt,
+            onDismissAdapt = onDismissAdapt,
+            onSimulateVoice = onSimulateVoice,
         )
     } else {
         PhoneTripScreen(
@@ -65,6 +71,9 @@ fun TripScreen(
             onConfirmArrivalFromPrompt = onConfirmArrivalFromPrompt,
             onDismissArrivalConfirm = onDismissArrivalConfirm,
             reviewCallbacks = reviewCallbacks,
+            onAcceptAdapt = onAcceptAdapt,
+            onDismissAdapt = onDismissAdapt,
+            onSimulateVoice = onSimulateVoice,
         )
     }
 }

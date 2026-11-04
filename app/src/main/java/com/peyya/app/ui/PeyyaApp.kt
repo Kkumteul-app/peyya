@@ -70,6 +70,9 @@ fun PeyyaApp(
                 onConfirmArrivalFromPrompt = viewModel::confirmArrivalFromPrompt,
                 onDismissArrivalConfirm = viewModel::dismissArrivalConfirm,
                 reviewCallbacks = reviewCallbacks,
+                onAcceptAdapt = viewModel::acceptAdaptCandidate,
+                onDismissAdapt = viewModel::dismissAdaptSuggestion,
+                onSimulateVoice = viewModel::simulateVoiceUtterance,
             )
             SnackbarHost(
                 hostState = snackbarHostState,

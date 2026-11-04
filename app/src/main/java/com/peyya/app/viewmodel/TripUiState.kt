@@ -1,5 +1,6 @@
 package com.peyya.app.viewmodel
 
+import com.peyya.app.adapt.AdaptSuggestion
 import com.peyya.app.domain.FamilyProfile
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.TripPlan
@@ -29,4 +30,6 @@ data class TripUiState(
     val courseOffer: CourseCandidate? = null,
     /** 폰 C2 — 코스 적용 확인 */
     val courseAppliedConfirm: Boolean = false,
+    /** 도착·대기 맥락 혼잡/우회/주차 제안. null이면 숨김 */
+    val adaptSuggestion: AdaptSuggestion? = null,
 )
