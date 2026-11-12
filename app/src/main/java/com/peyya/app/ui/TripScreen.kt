@@ -63,6 +63,7 @@ fun TripScreen(
     onUpdateDisplayName: (String) -> Unit = {},
     onUpdateVehicleModel: (String) -> Unit = {},
     onUpdateVehiclePlate: (String) -> Unit = {},
+    onApplyCourseCandidate: (String) -> Unit = {},
 ) {
     if (isCarLayout()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -131,6 +132,7 @@ fun TripScreen(
             onUpdateDisplayName = onUpdateDisplayName,
             onUpdateVehicleModel = onUpdateVehicleModel,
             onUpdateVehiclePlate = onUpdateVehiclePlate,
+            onApplyCourseCandidate = onApplyCourseCandidate,
         )
     }
 }

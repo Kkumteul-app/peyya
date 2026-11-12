@@ -157,9 +157,24 @@ class TripViewModel(
         }
         val candidate = _uiState.value.courseCandidates.firstOrNull { it.courseId == courseId }
             ?: _uiState.value.courseOffer?.takeIf { it.courseId == courseId }
+            ?: catalogCandidate(courseId)
             ?: return
         courseOfferDismissed = true
         applyCandidate(candidate)
+    }
+
+    private fun catalogCandidate(courseId: String): CourseCandidate? {
+        val plan = courseCatalog.firstOrNull { it.id == courseId } ?: return null
+        val selected = plan.selectedStops().ifEmpty { plan.stops }
+        return CourseCandidate(
+            courseId = plan.id,
+            title = plan.title,
+            stopPoiIds = selected.map { it.poiId },
+            stops = selected,
+            score = 0.0,
+            positiveHitCount = 0,
+            negativeHitCount = 0,
+        )
     }
 
     fun toggleStop(stopId: String, selected: Boolean) {

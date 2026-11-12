@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.peyya.app.data.TripThemeAnalyzer
 import com.peyya.app.review.CourseCandidate
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.theme.PeyyaBrand
@@ -26,6 +27,7 @@ import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.ui.theme.PeyyaLine
 import com.peyya.app.ui.theme.PeyyaSpace
+import com.peyya.app.viewmodel.PlanCompanion
 
 /**
  * Plan 홈용 인라인 코스 카드. 풀스크린 오버레이를 대체한다.
@@ -36,8 +38,10 @@ fun PhoneCourseTeaser(
     onApply: () -> Unit,
     onDismiss: () -> Unit,
     onOpenRecommend: () -> Unit,
+    companion: PlanCompanion = PlanCompanion.Family,
     modifier: Modifier = Modifier,
 ) {
+    val theme = TripThemeAnalyzer.themeSentence(candidate.stops, companion)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -57,10 +61,11 @@ fun PhoneCourseTeaser(
             }
         }
         Text(
-            candidate.title,
+            theme,
             color = PeyyaInk,
-            fontSize = 17.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
+            lineHeight = 22.sp,
         )
         Text(
             candidate.stops.joinToString(" → ") { it.name },
@@ -69,7 +74,7 @@ fun PhoneCourseTeaser(
             lineHeight = 18.sp,
         )
         Text(
-            "리뷰 기반으로 골랐어요. 닫아도 추천 탭에서 다시 볼 수 있어요.",
+            "${candidate.title} · 실행의 한 문장 테마와 맞는 코스예요.",
             color = PeyyaInkDim,
             fontSize = 12.sp,
             lineHeight = 16.sp,

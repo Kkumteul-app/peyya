@@ -9,6 +9,7 @@
     --ink: #1A1A1A;
     --sub: #5B6270;
     --brand: #2F6BFF;
+    --green: #2ED573;
     --bg0: #0E1116;
     --bg1: #1A2230;
   }
@@ -31,25 +32,16 @@
     gap: 16px;
   }
   .top {
-    width: min(420px, 100%);
+    width: min(1120px, 100%);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
   }
-  .top h1 {
-    margin: 0;
-    font-size: 18px;
-    letter-spacing: -.2px;
-  }
-  .top p {
-    margin: 4px 0 0;
-    font-size: 13px;
-    color: #A8B0BC;
-    line-height: 1.45;
-  }
+  .top h1 { margin: 0; font-size: 18px; letter-spacing: -.2px; }
+  .top p { margin: 4px 0 0; font-size: 13px; color: #A8B0BC; line-height: 1.45; }
   .links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-  .links a {
+  .links a, .links button {
     text-decoration: none;
     color: #F2F4F7;
     background: rgba(255,255,255,.08);
@@ -58,20 +50,31 @@
     padding: 8px 12px;
     font-size: 12px;
     font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
   }
-  .links a:hover { border-color: rgba(46,213,115,.5); color: #2ED573; }
+  .links a:hover, .links button:hover { border-color: rgba(46,213,115,.5); color: #2ED573; }
+  .links button.on { background: rgba(46,213,115,.18); border-color: var(--green); color: var(--green); }
   .device {
     position: relative;
-    width: min(390px, 100%);
-    height: min(844px, calc(100vh - 120px));
-    border-radius: 40px;
-    padding: 12px;
     background: linear-gradient(160deg, #2A313A, #12151A);
     box-shadow:
       0 0 0 1px rgba(255,255,255,.08),
       0 28px 60px rgba(0,0,0,.45);
   }
-  .device .bezel {
+  .device.phone {
+    width: min(390px, 100%);
+    height: min(844px, calc(100vh - 120px));
+    border-radius: 40px;
+    padding: 12px;
+  }
+  .device.car {
+    width: min(1120px, 100%);
+    height: min(630px, calc(100vh - 140px));
+    border-radius: 22px;
+    padding: 10px;
+  }
+  .device.phone .bezel {
     position: absolute;
     top: 18px; left: 50%;
     transform: translateX(-50%);
@@ -81,16 +84,18 @@
     z-index: 2;
     pointer-events: none;
   }
+  .device.car .bezel { display: none; }
   .device iframe {
     display: block;
     width: 100%;
     height: 100%;
     border: 0;
-    border-radius: 30px;
-    background: #fff;
+    background: #0B0E13;
   }
+  .device.phone iframe { border-radius: 30px; background: #fff; }
+  .device.car iframe { border-radius: 14px; }
   .hint {
-    width: min(420px, 100%);
+    width: min(1120px, 100%);
     font-size: 12px;
     color: #A8B0BC;
     line-height: 1.45;
@@ -103,28 +108,59 @@
   <div class="top">
     <div>
       <h1>페이야 앱 목업</h1>
-      <p>최신 구현 화면을 폰 안에서 그대로 조작합니다.</p>
+      <p id="desc">휴대폰·차량 내비 둘 다 구현되어 있습니다. 셸을 바꿔 확인하세요.</p>
     </div>
     <div class="links">
-      <a href="phone-plan-connect.html?embed=1" target="peyyaApp" id="restart">처음부터</a>
+      <button type="button" class="on" id="btnPhone">휴대폰</button>
+      <button type="button" id="btnCar">차량 내비</button>
+      <a href="#" id="restart">처음부터</a>
       <a href="gallery.html">옛 캡처 아카이브</a>
     </div>
   </div>
 
-  <div class="device" aria-label="Peyya phone mock">
+  <div class="device phone" id="device" aria-label="Peyya device mock">
     <div class="bezel" aria-hidden="true"></div>
-    <iframe
-      name="peyyaApp"
-      id="appFrame"
-      title="Peyya"
-      src="phone-plan-connect.html?embed=1"
-      allow="geolocation"
-    ></iframe>
+    <iframe id="appFrame" title="Peyya" src="phone-plan-connect.html?embed=1" allow="geolocation"></iframe>
   </div>
 
-  <p class="hint">
-    <b>사전설정 → 지도·코스 → 실행 → 완료·별점</b> 순으로 탭과 버튼을 눌러 보세요.
-    지도·영업시간·알림 리뷰는 최신 HTML 기준입니다.
+  <p class="hint" id="hint">
+    <b>Phone</b> 사전설정 → 지도·코스 → 실행 → 별점 ·
+    <b>Car</b> 본내비(좌) + 페이야 위젯(우) · 도착 자동 → 팁/음성 → 다음 장소
   </p>
+
+<script>
+const device = document.getElementById('device');
+const frame = document.getElementById('appFrame');
+const btnPhone = document.getElementById('btnPhone');
+const btnCar = document.getElementById('btnCar');
+const restart = document.getElementById('restart');
+const desc = document.getElementById('desc');
+let mode = 'phone';
+
+function setMode(next) {
+  mode = next;
+  const isPhone = mode === 'phone';
+  device.classList.toggle('phone', isPhone);
+  device.classList.toggle('car', !isPhone);
+  btnPhone.classList.toggle('on', isPhone);
+  btnCar.classList.toggle('on', !isPhone);
+  desc.textContent = isPhone
+    ? '휴대폰 앱 · 계획/실행/추천/마이 탭을 폰 안에서 조작합니다.'
+    : '차량 · 좌측 본내비 + 우측 페이야 위젯(도착 자동·주차 팁·음성/버튼).';
+  const src = isPhone ? 'phone-plan-connect.html?embed=1' : 'car-execute.html?embed=1';
+  frame.src = src;
+  restart.href = src;
+  restart.target = '';
+  restart.onclick = (e) => {
+    e.preventDefault();
+    frame.src = src;
+  };
+}
+
+btnPhone.onclick = () => setMode('phone');
+btnCar.onclick = () => setMode('car');
+const q = new URLSearchParams(location.search).get('shell');
+setMode(q === 'car' ? 'car' : 'phone');
+</script>
 </body>
 </html>

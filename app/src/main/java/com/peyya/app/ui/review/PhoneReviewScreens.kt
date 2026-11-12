@@ -290,6 +290,7 @@ fun QuietHeroCard(
 
 @Composable
 fun CourseCard(candidate: CourseCandidate) {
+    val theme = com.peyya.app.data.TripThemeAnalyzer.themeSentence(candidate.stops)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -300,15 +301,17 @@ fun CourseCard(candidate: CourseCandidate) {
     ) {
         Text("코스 추천", color = PeyyaBrand, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Text(
-            candidate.title,
+            theme,
             color = PeyyaInk,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.ExtraBold,
+            lineHeight = 26.sp,
         )
         Text(
-            "긍정 리뷰가 많은 장소 위주 · 부정 페널티 반영",
+            candidate.title,
             color = PeyyaInkDim,
             fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
         )
         candidate.stops.forEachIndexed { index, stop ->
             Text(

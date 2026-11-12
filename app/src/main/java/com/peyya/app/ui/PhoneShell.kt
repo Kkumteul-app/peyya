@@ -60,6 +60,7 @@ fun PhoneShell(
     onUpdateDisplayName: (String) -> Unit = {},
     onUpdateVehicleModel: (String) -> Unit = {},
     onUpdateVehiclePlate: (String) -> Unit = {},
+    onApplyCourseCandidate: (String) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableStateOf(PhoneTab.Plan.name) }
     val selected = PhoneTab.entries.firstOrNull { it.name == tab } ?: PhoneTab.Plan
@@ -134,6 +135,7 @@ fun PhoneShell(
             PhoneTab.Recommend -> PhoneRecommendScreen(
                 state = state,
                 contentPadding = padding,
+                onApplyCourse = onApplyCourseCandidate,
             )
             PhoneTab.My -> PhoneMyScreen(
                 state = state,

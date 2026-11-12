@@ -36,18 +36,52 @@
   .body { flex: 1; overflow: auto; padding: 8px 20px 16px; }
   .title { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
   .desc { font-size: 14px; color: var(--ink-sub); margin: 0 0 14px; line-height: 1.4; }
-  .card { background: var(--soft); border-radius: 20px; overflow: hidden; margin-bottom: 14px; }
-  .card img.cover { width: 100%; height: 190px; object-fit: cover; display: block; }
-  .card .pad { padding: 14px 16px 16px; }
-  .meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .avatar {
-    width: 36px; height: 36px; border-radius: 50%; background: rgba(47,107,255,.15);
-    display: grid; place-items: center; color: var(--brand); font-weight: 700; font-size: 14px;
+  .course {
+    border: 1px solid var(--line); border-radius: 20px; overflow: hidden;
+    margin-bottom: 14px; background: #fff;
   }
-  .stars { color: var(--star); font-size: 14px; letter-spacing: 1px; }
-  .place { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
-  .place-meta { font-size: 13px; color: var(--ink-dim); margin: 0 0 8px; }
-  .comment { font-size: 14px; color: var(--ink-sub); line-height: 1.45; margin: 0; }
+  .course .cover {
+    height: 140px; background: #ddd center/cover no-repeat; position: relative;
+  }
+  .course .cover::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.65));
+  }
+  .course .cover .tag {
+    position: absolute; left: 12px; top: 12px; z-index: 1;
+    background: rgba(0,0,0,.5); color: #fff; font-size: 11px; font-weight: 800;
+    padding: 4px 8px; border-radius: 8px;
+  }
+  .course .pad { padding: 14px 16px 16px; }
+  .kicker { color: var(--brand); font-size: 12px; font-weight: 800; margin-bottom: 6px; }
+  .theme {
+    margin: 0 0 10px; font-size: 17px; font-weight: 800; line-height: 1.35; letter-spacing: -.2px;
+  }
+  .stops { margin: 0 0 12px; padding: 0; list-style: none; }
+  .stops li {
+    display: flex; gap: 8px; align-items: baseline;
+    font-size: 13px; color: var(--ink-sub); padding: 3px 0;
+  }
+  .stops .n {
+    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto;
+    display: grid; place-items: center; font-size: 10px; font-weight: 800;
+    background: var(--soft); color: var(--ink-dim);
+  }
+  .meta-row {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-size: 12px; color: var(--ink-dim); font-weight: 700; margin-bottom: 12px;
+  }
+  .stars { color: var(--star); letter-spacing: 1px; }
+  .cta {
+    width: 100%; height: 48px; border: 0; border-radius: 14px;
+    background: var(--brand); color: #fff; font-size: 15px; font-weight: 800; cursor: pointer;
+  }
+  .cta.ghost { background: var(--soft); color: var(--ink); margin-top: 8px; }
+  .toast {
+    display: none; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+    background: #12151A; color: #fff; font-size: 12px; font-weight: 700;
+  }
+  .toast.on { display: block; }
   html.embed, html.embed body {
     width: 100%; height: 100%; margin: 0; padding: 0; background: #fff; overflow: hidden;
   }
@@ -59,60 +93,96 @@
 </head>
 <body>
   <h1>Peyya — 추천</h1>
-  <p class="sub">다녀온 사람들의 별점·후기로 다음 장소를 고릅니다.</p>
+  <p class="sub">실행에 쓰인 <b>한 문장 테마</b>와 비슷한 여행 코스를 추천합니다.</p>
   <div class="phone">
     <div class="status"><span>9:41</span><span>LTE</span></div>
     <div class="body">
       <div class="title">추천</div>
-      <p class="desc">다녀온 사람들의 사진과 별점으로 다음 장소를 골라 보세요.</p>
-      <div class="card">
-        <img class="cover" src="places/museum.jpg" alt="" />
-        <div class="pad">
-          <div class="meta">
-            <div class="avatar">이</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:14px">이서연</div>
-              <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">가족과 함께</div>
-            </div>
-            <div class="stars">★★★★★</div>
-          </div>
-          <div class="place">국립중앙박물관</div>
-          <p class="place-meta">용산 · 문화 · 지난 주말</p>
-          <p class="comment">아이랑 특별전이 딱이었어요. 다음엔 점심까지 이어서 잡으려요.</p>
+      <p class="desc">장소가 아니라 <b>여행 코스</b>를 고릅니다. 실행 탭의 「오늘의 계획」한 문장과 맞는 동선을 보여 줘요.</p>
+
+      <article class="course">
+        <div class="cover" style="background-image:url('places/museum.jpg')">
+          <span class="tag">리뷰 기반 · 가족</span>
         </div>
-      </div>
-      <div class="card">
-        <img class="cover" src="places/food.jpg" alt="" />
         <div class="pad">
-          <div class="meta">
-            <div class="avatar">박</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:14px">박준호</div>
-              <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">연인과 함께</div>
-            </div>
-            <div class="stars">★★★★☆</div>
+          <div class="kicker">코스 테마</div>
+          <p class="theme">가족과 함께 박물관을 둘러보고 근처에서 식사하는 하루예요.</p>
+          <ul class="stops">
+            <li><span class="n">1</span>국립중앙박물관</li>
+            <li><span class="n">2</span>용산 한식 담소</li>
+          </ul>
+          <div class="meta-row">
+            <span>주말 박물관 · 맛집 루트</span>
+            <span class="stars">★★★★★</span>
           </div>
-          <div class="place">용산 한식 담소</div>
-          <p class="place-meta">식사 · 박물관 인근 · 2주 전</p>
-          <p class="comment">대기 짧고 반찬이 정갈해요. 연인이랑 오기 좋은 온도.</p>
+          <button type="button" class="cta" data-apply="museum">이 코스로 계획</button>
         </div>
-      </div>
+      </article>
+
+      <article class="course">
+        <div class="cover" style="background-image:url('places/food.jpg')">
+          <span class="tag">리뷰 기반 · 식사 먼저</span>
+        </div>
+        <div class="pad">
+          <div class="kicker">코스 테마</div>
+          <p class="theme">가족과 함께 맛집 코스로 즐기는 하루예요.</p>
+          <ul class="stops">
+            <li><span class="n">1</span>용산 한식 담소</li>
+            <li><span class="n">2</span>국립중앙박물관</li>
+          </ul>
+          <div class="meta-row">
+            <span>맛집 먼저 · 박물관 루트</span>
+            <span class="stars">★★★★☆</span>
+          </div>
+          <button type="button" class="cta" data-apply="food">이 코스로 계획</button>
+        </div>
+      </article>
+
+      <article class="course">
+        <div class="cover" style="background-image:url('places/park.jpg')">
+          <span class="tag">야외 · 가볍게</span>
+        </div>
+        <div class="pad">
+          <div class="kicker">코스 테마</div>
+          <p class="theme">혼자 야외 산책 위주로 다녀오는 하루예요.</p>
+          <ul class="stops">
+            <li><span class="n">1</span>남산 산책</li>
+            <li><span class="n">2</span>한강 공원 쉼터</li>
+          </ul>
+          <div class="meta-row">
+            <span>남산 · 한강 짧은 코스</span>
+            <span class="stars">★★★★★</span>
+          </div>
+          <button type="button" class="cta" data-apply="park">이 코스로 계획</button>
+        </div>
+      </article>
+
+      <div class="toast" id="toast">계획 탭으로 코스를 담았어요 (데모)</div>
     </div>
     <nav class="nav">
-      <a data-tab="plan" href="phone-plan-connect.html">
+      <a href="phone-plan-connect.html">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획
       </a>
-      <a data-tab="execute" href="phone-execute.html">
+      <a href="phone-execute.html">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행
       </a>
       <a class="on" href="#">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천
       </a>
-      <a data-tab="my" href="phone-my.html">
+      <a href="phone-my.html">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이
       </a>
     </nav>
   </div>
+<script>
+document.querySelectorAll('[data-apply]').forEach(btn => {
+  btn.onclick = () => {
+    const toast = document.getElementById('toast');
+    toast.classList.add('on');
+    setTimeout(() => { location.href = 'phone-plan-connect.html' + (location.search.includes('embed') ? '?embed=1' : ''); }, 700);
+  };
+});
+</script>
 <script src="preview-embed.js"></script>
 </body>
 </html>

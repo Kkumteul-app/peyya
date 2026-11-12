@@ -88,6 +88,7 @@ fun PeyyaApp(
             onUpdateDisplayName = viewModel::updateDisplayName,
             onUpdateVehicleModel = viewModel::updateVehicleModel,
             onUpdateVehiclePlate = viewModel::updateVehiclePlate,
+            onApplyCourseCandidate = viewModel::applyCourseCandidate,
         )
     }
 }
