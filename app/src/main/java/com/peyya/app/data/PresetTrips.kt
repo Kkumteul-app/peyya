@@ -47,6 +47,9 @@ object PresetTrips {
                 needsBooking = true,
                 bookingUrl = MUSEUM_BOOKING_URL,
                 prepChecklist = MUSEUM_PREP_CHECKLIST,
+                highlights = DestinationTipsCatalog.museumTips.highlights,
+                parkingTips = DestinationTipsCatalog.museumTips.parkingTips,
+                familyTips = DestinationTipsCatalog.museumTips.familyTips,
             ),
             Stop(
                 id = "restaurant",
@@ -55,7 +58,22 @@ object PresetTrips {
                 latitude = 37.53120,
                 longitude = 126.96580,
                 poiId = "peyya-demo-restaurant",
+                highlights = DestinationTipsCatalog.restaurantTips.highlights,
+                parkingTips = DestinationTipsCatalog.restaurantTips.parkingTips,
+                familyTips = DestinationTipsCatalog.restaurantTips.familyTips,
             ),
         ),
     )
+
+    /** 추천 탭 카탈로그용 — 동일 POI, 식사 우선 순서. */
+    val foodFirstTrip = TripPlan(
+        id = "food-first",
+        title = "맛집 먼저 · 박물관 루트",
+        stops = listOf(
+            weekendMuseumTrip.stops[1].copy(id = "restaurant-first", selected = true),
+            weekendMuseumTrip.stops[0].copy(id = "museum-second", selected = true),
+        ),
+    )
+
+    val courseCatalog: List<TripPlan> = listOf(weekendMuseumTrip, foodFirstTrip)
 }

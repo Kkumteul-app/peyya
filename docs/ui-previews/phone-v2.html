@@ -1,0 +1,373 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Peyya — 수정 화면 (계획·실행·추천·마이)</title>
+<style>
+  :root {
+    --brand: #2F6BFF;
+    --ink: #1A1A1A;
+    --ink-sub: #3D434D;
+    --ink-dim: #5B6270;
+    --soft: #F1F3F6;
+    --line: #D9DDE3;
+    --canvas: #fff;
+    --star: #E6A700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 20px 48px;
+    font-family: "Pretendard","Noto Sans KR",system-ui,sans-serif;
+    background: #E6EAF0; color: var(--ink);
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--ink-dim); font-size: 13px; margin: 0 0 24px; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+  .cap { text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-dim); margin-bottom: 8px; }
+  .phone {
+    width: 390px; height: 844px; background: var(--canvas);
+    border-radius: 36px; border: 1px solid #C5CCD6; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .status { height: 44px; padding: 14px 22px 0; display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+  .body { flex: 1; overflow: auto; padding: 8px 20px 12px; }
+  .title { font-size: 22px; font-weight: 800; letter-spacing: -.3px; margin: 0 0 6px; }
+  .desc { font-size: 14px; color: var(--ink-sub); margin: 0 0 14px; line-height: 1.4; }
+  .hero {
+    position: relative; height: 160px; border-radius: 20px; overflow: hidden; margin-bottom: 14px;
+    background: #ddd center/cover no-repeat;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.72));
+  }
+  .hero .copy { position: absolute; left: 16px; bottom: 14px; right: 16px; z-index: 1; color: #fff; }
+  .hero .k { font-size: 11px; font-weight: 700; opacity: .85; }
+  .hero h2 { margin: 4px 0 2px; font-size: 18px; }
+  .hero p { margin: 0; font-size: 12px; opacity: .9; }
+  .sec { font-size: 15px; font-weight: 800; margin: 12px 0 8px; }
+  .stop {
+    display: flex; gap: 12px; align-items: center; padding: 10px;
+    border: 1px solid var(--brand); border-radius: 18px; margin-bottom: 10px;
+    background: rgba(47,107,255,.04);
+  }
+  .stop img { width: 92px; height: 78px; object-fit: cover; border-radius: 14px; }
+  .stop h3 { margin: 0 0 4px; font-size: 15px; }
+  .stop p { margin: 0; font-size: 12px; color: var(--ink-sub); }
+  .chip { display: inline-block; background: var(--soft); border-radius: 999px; padding: 6px 12px; font-size: 13px; margin: 0 6px 6px 0; }
+  .cta {
+    width: 100%; height: 56px; border: 0; border-radius: 14px; margin-top: 8px;
+    background: var(--brand); color: #fff; font-size: 16px; font-weight: 700;
+  }
+  .cta.soft { height: 48px; background: var(--soft); color: var(--ink-sub); font-size: 15px; }
+  .cta:disabled { background: #E3E6EA; color: #8A8F98; }
+  .now {
+    background: var(--brand); color: #fff; border-radius: 20px; padding: 18px; margin-bottom: 12px;
+  }
+  .now .phase { font-size: 13px; font-weight: 700; opacity: .9; }
+  .now h2 { margin: 8px 0 6px; font-size: 24px; line-height: 1.25; }
+  .timeline { font-size: 14px; padding: 8px 0; border-left: 2px solid var(--line); margin-left: 8px; padding-left: 14px; }
+  .timeline .cur { color: var(--brand); font-weight: 700; }
+  .card {
+    background: var(--soft); border-radius: 20px; overflow: hidden; margin-bottom: 14px;
+  }
+  .card img.cover { width: 100%; height: 190px; object-fit: cover; display: block; }
+  .card .pad { padding: 14px 16px 16px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: rgba(47,107,255,.15);
+    display: grid; place-items: center; color: var(--brand); font-weight: 700; font-size: 14px;
+  }
+  .meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .stars { color: var(--star); font-size: 14px; letter-spacing: 1px; }
+  .place { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+  .place-meta { font-size: 13px; color: var(--ink-dim); margin: 0 0 8px; }
+  .comment { font-size: 14px; color: var(--ink-sub); line-height: 1.45; margin: 0; }
+  .field {
+    background: var(--soft); border-radius: 12px; padding: 12px 14px;
+    font-size: 16px; font-weight: 700; margin: 6px 0 12px;
+  }
+  .label { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+  .visit {
+    display: flex; gap: 10px; border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px; margin-bottom: 10px;
+  }
+  .visit img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; }
+  .nav {
+    border-top: 1px solid var(--line); height: 72px; display: grid;
+    grid-template-columns: repeat(4, 1fr); align-items: center; padding-bottom: 6px;
+  }
+  .nav button {
+    border: 0; background: 0; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; color: var(--ink-dim); font-size: 11px; font-weight: 500;
+  }
+  .nav button.on { color: var(--brand); font-weight: 700; }
+  .nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .note { max-width: 1100px; margin: 24px auto 0; text-align: center; font-size: 12px; color: var(--ink-dim); }
+  .search {
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    font-size: 14px; color: var(--ink-dim); margin-bottom: 12px; background: #fff;
+  }
+  .result {
+    display: flex; gap: 12px; align-items: center; padding: 10px; margin-bottom: 8px;
+    border: 1px solid var(--brand); border-radius: 14px; background: rgba(47,107,255,.06);
+  }
+  .result img { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; }
+  .result h3 { margin: 0 0 2px; font-size: 14px; }
+  .result p { margin: 0; font-size: 12px; color: var(--ink-sub); }
+  .map {
+    position: relative; height: 200px; border-radius: 20px; overflow: hidden;
+    margin-bottom: 12px; border: 1px solid var(--line);
+    background: #1a2a1f center/cover no-repeat;
+  }
+  .map::after { content:""; position:absolute; inset:0; background: rgba(26,42,31,.28); }
+  .pin {
+    position: absolute; z-index: 2; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--brand); color: #fff; font-size: 10px; font-weight: 700;
+    display: grid; place-items: center; border: 2px solid #fff;
+  }
+  .map .copy { position: absolute; left: 14px; bottom: 12px; z-index: 2; color: #fff; }
+  .map .copy h2 { margin: 0 0 2px; font-size: 15px; }
+  .map .copy p { margin: 0; font-size: 12px; opacity: .9; }
+  .nearby-row { display: flex; gap: 12px; overflow: hidden; margin-bottom: 8px; }
+  .decide {
+    width: 188px; flex: 0 0 auto; border: 2px solid var(--brand); border-radius: 18px;
+    overflow: hidden; background: #fff;
+  }
+  .decide.alt { border-color: var(--line); border-width: 1px; }
+  .decide .shot { position: relative; height: 120px; background: #ddd center/cover no-repeat; }
+  .decide .shot .tag {
+    position: absolute; left: 10px; top: 10px; background: rgba(0,0,0,.45);
+    color: #fff; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;
+  }
+  .decide .shot .picked {
+    position: absolute; right: 10px; top: 10px; background: var(--brand);
+    color: #fff; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px;
+  }
+  .decide .pad { padding: 12px; }
+  .decide h3 { margin: 0 0 4px; font-size: 14px; }
+  .decide p { margin: 0 0 10px; font-size: 12px; color: var(--ink-sub); line-height: 1.35; }
+  .decide .pick {
+    text-align: center; border-radius: 12px; padding: 10px 0; font-size: 13px; font-weight: 700;
+    background: var(--brand); color: #fff;
+  }
+  .decide.alt .pick { background: rgba(47,107,255,.12); color: var(--brand); }
+</style>
+</head>
+<body>
+  <h1>Peyya — 수정된 Phone 화면</h1>
+  <p class="sub">탭: 계획(지도검색·주변추천·사진결정) · 실행 · 추천 · 마이 · APK: Peyya_plan-map_debug-signed.apk</p>
+
+  <div class="row">
+    <!-- PLAN -->
+    <div>
+      <div class="cap">01 · 계획 (지도 → 주변 → 결정)</div>
+      <div class="phone" id="plan">
+        <div class="status"><span>9:41</span><span>LTE</span></div>
+        <div class="body">
+          <div class="title">계획</div>
+          <p class="desc">지도를 검색한 뒤, 주변 추천 사진으로 오늘 루트를 결정하세요.</p>
+          <div class="search">국립중앙박물관</div>
+          <div class="result">
+            <img src="places/museum.jpg" alt="" />
+            <div style="flex:1">
+              <h3>국립중앙박물관</h3>
+              <p>서울 용산구 서빙고로 137</p>
+            </div>
+            <span style="color:var(--brand);font-size:12px;font-weight:700">기준</span>
+          </div>
+          <div class="map" style="background-image:url('places/park.jpg')">
+            <div class="pin" style="left:42%;top:38%">기준</div>
+            <div class="pin" style="left:28%;top:58%;background:#fff;color:var(--brand)">1</div>
+            <div class="copy">
+              <h2>국립중앙박물관</h2>
+              <p>선택 핀 2곳</p>
+            </div>
+          </div>
+          <div class="sec">국립중앙박물관 주변 추천</div>
+          <p style="font-size:12px;color:var(--ink-sub);margin:-4px 0 10px;line-height:1.4">사진을 탭해 루트에 넣거나 빼세요.</p>
+          <div class="nearby-row">
+            <div class="decide">
+              <div class="shot" style="background-image:url('places/food.jpg')">
+                <span class="tag">식당</span>
+                <span class="picked">선택됨</span>
+              </div>
+              <div class="pad">
+                <h3>용산 한식 담소</h3>
+                <p>1.4km · 한강대로 인근</p>
+                <div class="pick">루트에서 빼기</div>
+              </div>
+            </div>
+            <div class="decide alt">
+              <div class="shot" style="background-image:url('places/cafe.jpg')">
+                <span class="tag">카페</span>
+              </div>
+              <div class="pad">
+                <h3>한남 카페 골목</h3>
+                <p>1.8km · 이태원로 인근</p>
+                <div class="pick">이 장소로 결정</div>
+              </div>
+            </div>
+          </div>
+          <div class="sec">오늘 루트</div>
+          <div class="stop">
+            <img src="places/museum.jpg" alt="" />
+            <div>
+              <h3>국립중앙박물관</h3>
+              <p>서울 용산구 서빙고로 137</p>
+            </div>
+          </div>
+          <div class="stop">
+            <img src="places/food.jpg" alt="" />
+            <div>
+              <h3>용산 한식 담소</h3>
+              <p>선택됨 · 오늘 동선</p>
+            </div>
+          </div>
+          <button class="cta">이 계획으로 실행하기</button>
+        </div>
+        <nav class="nav">
+          <button class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이</button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- EXECUTE -->
+    <div>
+      <div class="cap">02 · 실행 (코스추천 없음)</div>
+      <div class="phone" id="execute">
+        <div class="status"><span>9:41</span><span>LTE</span></div>
+        <div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:20px;font-weight:800">페이야</div>
+            <span style="background:var(--brand);color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px">Mock</span>
+          </div>
+          <div class="now">
+            <div class="phase">안내 중 · 1 / 2</div>
+            <h2>국립중앙박물관<br/>가는 중</h2>
+            <p style="margin:0;opacity:.95;font-size:14px">다음 · 용산 한식 담소</p>
+          </div>
+          <div class="sec">주말 박물관 · 맛집 루트</div>
+          <div class="timeline cur">1 국립중앙박물관 · 지금 가는 곳</div>
+          <div class="timeline">2 용산 한식 담소 · 다음</div>
+          <p style="font-size:13px;color:var(--ink-dim);margin:14px 0 0">실행 탭에는 코스 추천이 없습니다. 계획은 계획 탭에서.</p>
+          <button class="cta" style="margin-top:16px">도착으로 표시</button>
+        </div>
+        <nav class="nav">
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획</button>
+          <button class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이</button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- RECOMMEND -->
+    <div>
+      <div class="cap">03 · 추천 (리뷰 피드)</div>
+      <div class="phone" id="recommend">
+        <div class="status"><span>9:41</span><span>LTE</span></div>
+        <div class="body">
+          <div class="title">추천</div>
+          <p class="desc">다녀온 사람들의 사진과 별점으로 다음 장소를 골라 보세요.</p>
+
+          <div class="card">
+            <img class="cover" src="places/museum.jpg" alt="" />
+            <div class="pad">
+              <div class="meta">
+                <div class="avatar">이</div>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:14px">이서연</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">가족과 함께</div>
+                </div>
+                <div class="stars">★★★★★</div>
+              </div>
+              <div class="place">국립중앙박물관</div>
+              <p class="place-meta">용산 · 문화 · 지난 주말</p>
+              <p class="comment">아이랑 특별전이 딱이었어요. 다음엔 점심까지 이어서 잡으려요.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <img class="cover" src="places/food.jpg" alt="" />
+            <div class="pad">
+              <div class="meta">
+                <div class="avatar">박</div>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:14px">박준호</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">연인과 함께</div>
+                </div>
+                <div class="stars">★★★★☆</div>
+              </div>
+              <div class="place">용산 한식 담소</div>
+              <p class="place-meta">식사 · 박물관 인근 · 2주 전</p>
+              <p class="comment">대기 짧고 반찬이 정갈해요. 연인이랑 오기 좋은 온도.</p>
+            </div>
+          </div>
+        </div>
+        <nav class="nav">
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행</button>
+          <button class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이</button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- MY -->
+    <div>
+      <div class="cap">04 · 마이</div>
+      <div class="phone" id="my">
+        <div class="status"><span>9:41</span><span>LTE</span></div>
+        <div class="body">
+          <div class="title">마이</div>
+          <p class="desc">내 정보와 내가 남긴 방문 기록을 봅니다.</p>
+          <div class="hero" style="background-image:url('places/car.jpg');height:130px">
+            <div class="copy">
+              <div class="k">MY DRIVE</div>
+              <h2>차량과 나를 먼저 확인하세요</h2>
+            </div>
+          </div>
+          <div class="sec">내 정보</div>
+          <div class="label">이름</div>
+          <div class="field">김민수</div>
+          <div class="label">차량</div>
+          <div class="field">Hyundai IONIQ 5</div>
+          <div class="label">번호판</div>
+          <div class="field">12가 3456</div>
+          <button class="cta" disabled>내 정보 저장</button>
+          <div class="sec">내가 간 곳 · 리뷰</div>
+          <div class="visit">
+            <img src="places/museum.jpg" alt="" />
+            <div>
+              <div style="font-weight:700">국립중앙박물관</div>
+              <div class="stars">★★★★★</div>
+              <div style="font-size:12px;color:var(--ink-sub)">시드 루트 · 완료</div>
+            </div>
+          </div>
+          <div class="visit">
+            <img src="places/food.jpg" alt="" />
+            <div>
+              <div style="font-weight:700">용산 한식 담소</div>
+              <div class="stars">★★★★☆</div>
+              <div style="font-size:12px;color:var(--ink-sub)">시드 루트 · 완료</div>
+            </div>
+          </div>
+        </div>
+        <nav class="nav">
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행</button>
+          <button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천</button>
+          <button class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이</button>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">로컬 프리뷰 · http://127.0.0.1:8877/phone-v2.html · 스크린샷 갤러리 · http://127.0.0.1:8877/gallery.html · APK: Downloads\Peyya_plan-map_debug-signed.apk</p>
+</body>
+</html>
+

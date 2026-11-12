@@ -14,6 +14,20 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // 국토교통부 브이월드(VWorld) Open API 키 — local.properties 의 vworld.api.key
+        val localFile = rootProject.file("local.properties")
+        val vworldKey = if (localFile.exists()) {
+            localFile.readLines()
+                .firstOrNull { it.startsWith("vworld.api.key=") }
+                ?.substringAfter("=")
+                ?.trim()
+                ?.trim('"')
+                .orEmpty()
+        } else {
+            ""
+        }
+        buildConfigField("String", "VWORLD_API_KEY", "\"$vworldKey\"")
     }
 
     buildTypes {
@@ -67,6 +81,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.coil.compose)
 
     implementation(libs.pleos.navi.helper)
     implementation(libs.pleos.vehicle)

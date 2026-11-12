@@ -1,6 +1,7 @@
 package com.peyya.app.ui
 
 import android.location.Location
+import com.peyya.app.data.TripThemeAnalyzer
 import com.peyya.app.domain.Stop
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.viewmodel.TripUiState
@@ -125,4 +126,26 @@ fun currentStop(state: TripUiState): Stop? = when (val phase = state.phase) {
     is TripPhase.Arrived -> state.trip.stops.firstOrNull { it.id == phase.stopId }
     is TripPhase.AwaitingNext -> state.trip.stops.firstOrNull { it.id == phase.nextStopId }
     else -> null
+}
+
+/** NowCard 우측 · 현재 구간 또는 전체 코스 ETA */
+fun nowCardEtaLabel(state: TripUiState): String? {
+    val selected = state.trip.selectedStops()
+    if (selected.isEmpty()) return null
+    return when (val phase = state.phase) {
+        TripPhase.Idle -> TripThemeAnalyzer.totalEta(selected).combined
+        is TripPhase.Navigating -> {
+            val idx = selected.indexOfFirst { it.id == phase.stopId }
+            TripThemeAnalyzer.etaIntoStop(selected, idx)?.combined
+        }
+        is TripPhase.AwaitingNext -> {
+            val idx = selected.indexOfFirst { it.id == phase.nextStopId }
+            TripThemeAnalyzer.etaIntoStop(selected, idx)?.combined
+        }
+        is TripPhase.Arrived -> nextStopAfterArrived(state)?.let { next ->
+            val idx = selected.indexOfFirst { it.id == next.id }
+            TripThemeAnalyzer.etaIntoStop(selected, idx)?.combined
+        }
+        TripPhase.Completed -> null
+    }
 }

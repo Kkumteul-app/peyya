@@ -1,6 +1,7 @@
 package com.peyya.app.progress
 
 import com.peyya.app.domain.Stop
+import com.peyya.app.data.DestinationGuideSpeech
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.TripPlan
 import com.peyya.app.service.IgnitionGateway
@@ -88,6 +89,7 @@ class TripProgressCoordinator(
             arrivalConfirmVisible = false,
             nextLegProposed = false,
             lastArrivalPath = null,
+            lastSpoken = DestinationGuideSpeech.forStop(first),
         )
         return true
     }
@@ -181,6 +183,7 @@ class TripProgressCoordinator(
             arrivalConfirmVisible = false,
             nextLegProposed = false,
             lastArrivalPath = null,
+            lastSpoken = DestinationGuideSpeech.forStop(stop),
         )
         return true
     }

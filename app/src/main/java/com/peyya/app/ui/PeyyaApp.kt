@@ -1,15 +1,10 @@
 package com.peyya.app.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,30 +49,45 @@ fun PeyyaApp(
     }
 
     PeyyaTheme(carMode = carMode) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            TripScreen(
-                state = state,
-                onToggleStop = viewModel::toggleStop,
-                onStartRoute = viewModel::startDriving,
-                onMarkArrived = viewModel::markArrivedFromMenu,
-                onIgnition = viewModel::onIgnition,
-                onConfirmNext = viewModel::confirmNext,
-                onSkipNext = viewModel::skipNext,
-                onResetTrip = viewModel::resetTrip,
-                onSnooze = viewModel::snooze,
-                onSnoozeReservation = viewModel::snoozeReservation,
-                onSkipToday = viewModel::skipToday,
-                onConfirmArrivalFromPrompt = viewModel::confirmArrivalFromPrompt,
-                onDismissArrivalConfirm = viewModel::dismissArrivalConfirm,
-                reviewCallbacks = reviewCallbacks,
-                onAcceptAdapt = viewModel::acceptAdaptCandidate,
-                onDismissAdapt = viewModel::dismissAdaptSuggestion,
-                onSimulateVoice = viewModel::simulateVoiceUtterance,
-            )
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
+        TripScreen(
+            state = state,
+            snackbarHostState = snackbarHostState,
+            onToggleStop = viewModel::toggleStop,
+            onUpdatePlanSearch = viewModel::updatePlanSearchQuery,
+            onSelectPlanAnchor = viewModel::selectPlanAnchor,
+            onTogglePlanNearby = viewModel::togglePlanNearby,
+            onConfirmPlanEnd = viewModel::confirmPlanEnd,
+            onConfirmPlanContinue = viewModel::confirmPlanContinue,
+            onSetPlanTiming = viewModel::setPlanTiming,
+            onSetPlanCompanion = viewModel::setPlanCompanion,
+            onSetPlanDepartAt = viewModel::setPlanDepartAt,
+            onConfirmPlanPrefs = viewModel::confirmPlanPrefs,
+            onReopenPlanPrefs = viewModel::reopenPlanPrefs,
+            onReplacePlanRouteStop = viewModel::replacePlanRouteStop,
+            onRemovePlanRouteStop = viewModel::removePlanRouteStop,
+            onMovePlanRouteStop = viewModel::movePlanRouteStop,
+            onSaveWeekendPlan = viewModel::saveWeekendPlan,
+            onFindPlanRoute = viewModel::findPlanRoute,
+            onStartRoute = viewModel::startDriving,
+            onMarkArrived = viewModel::markArrivedFromMenu,
+            onIgnition = viewModel::onIgnition,
+            onReplayGuideSpeech = viewModel::replayGuideSpeech,
+            onConfirmNext = viewModel::confirmNext,
+            onSkipNext = viewModel::skipNext,
+            onResetTrip = viewModel::resetTrip,
+            onSnooze = viewModel::snooze,
+            onSnoozeReservation = viewModel::snoozeReservation,
+            onSkipToday = viewModel::skipToday,
+            onConfirmArrivalFromPrompt = viewModel::confirmArrivalFromPrompt,
+            onDismissArrivalConfirm = viewModel::dismissArrivalConfirm,
+            reviewCallbacks = reviewCallbacks,
+            onAcceptAdapt = viewModel::acceptAdaptCandidate,
+            onDismissAdapt = viewModel::dismissAdaptSuggestion,
+            onSimulateVoice = viewModel::simulateVoiceUtterance,
+            onUpdateFamilyName = viewModel::updateFamilyName,
+            onUpdateDisplayName = viewModel::updateDisplayName,
+            onUpdateVehicleModel = viewModel::updateVehicleModel,
+            onUpdateVehiclePlate = viewModel::updateVehiclePlate,
+        )
     }
 }

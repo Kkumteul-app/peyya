@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.peyya.app.data.TripThemeAnalyzer
 import com.peyya.app.domain.AgeBand
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
@@ -50,6 +51,7 @@ import com.peyya.app.progress.SnoozeChoice
 import com.peyya.app.ui.adapt.AdaptSuggestionPanel
 import com.peyya.app.ui.adapt.AdaptUiVisibility
 import com.peyya.app.ui.booking.BookingPrepSection
+import com.peyya.app.ui.tips.DestinationTipsCard
 import com.peyya.app.ui.booking.BookingUiVisibility
 import com.peyya.app.ui.components.ArrivalConfirmBanner
 import com.peyya.app.ui.components.CarOutlinedCta
@@ -86,6 +88,7 @@ fun CarTripScreen(
     onStartRoute: () -> Unit,
     onMarkArrived: () -> Unit,
     onIgnition: () -> Unit,
+    onReplayGuideSpeech: () -> Unit = {},
     onConfirmNext: () -> Unit,
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
@@ -103,7 +106,10 @@ fun CarTripScreen(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
     )
     val (title, _) = heroCopy(state)
-    val showVoice = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
+    val showVoice = state.lastSpoken.isNotBlank() &&
+        (state.phase is TripPhase.Navigating ||
+            state.phase is TripPhase.AwaitingNext ||
+            state.phase is TripPhase.Arrived)
     val addressLine = carAddressLine(state)
     var menuExpanded by remember { mutableStateOf(false) }
     var showReset by remember { mutableStateOf(false) }
@@ -196,6 +202,7 @@ fun CarTripScreen(
                             onMarkArrived()
                         },
                         onIgnition = onIgnition,
+                        onReplayGuideSpeech = onReplayGuideSpeech,
                         onAcceptAdapt = onAcceptAdapt,
                         onDismissAdapt = onDismissAdapt,
                         onSimulateVoice = onSimulateVoice,
@@ -237,6 +244,7 @@ private fun CarDefaultRightPane(
     onReset: () -> Unit,
     onMarkArrived: () -> Unit,
     onIgnition: () -> Unit,
+    onReplayGuideSpeech: () -> Unit = {},
     onAcceptAdapt: (String) -> Unit,
     onDismissAdapt: () -> Unit,
     onSimulateVoice: (String) -> Unit,
@@ -253,25 +261,36 @@ private fun CarDefaultRightPane(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
             )
-            Box {
-                IconButton(onClick = onMenuExpand, modifier = Modifier.size(64.dp)) {
-                    Icon(
-                        Icons.Rounded.MoreVert,
-                        contentDescription = "더보기",
-                        tint = CarTextSub,
-                        modifier = Modifier.size(28.dp),
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val eta = nowCardEtaLabel(state)
+                if (!eta.isNullOrBlank()) {
+                    Text(
+                        eta,
+                        color = CarText,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
                     )
                 }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
-                    DropdownMenuItem(
-                        text = { Text("일정 처음부터 다시", fontSize = 18.sp) },
-                        onClick = onReset,
-                    )
-                    if (state.phase is TripPhase.Navigating) {
-                        DropdownMenuItem(
-                            text = { Text("도착으로 표시", fontSize = 18.sp) },
-                            onClick = onMarkArrived,
+                Box {
+                    IconButton(onClick = onMenuExpand, modifier = Modifier.size(64.dp)) {
+                        Icon(
+                            Icons.Rounded.MoreVert,
+                            contentDescription = "더보기",
+                            tint = CarTextSub,
+                            modifier = Modifier.size(28.dp),
                         )
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
+                        DropdownMenuItem(
+                            text = { Text("일정 처음부터 다시", fontSize = 18.sp) },
+                            onClick = onReset,
+                        )
+                        if (state.phase is TripPhase.Navigating) {
+                            DropdownMenuItem(
+                                text = { Text("도착으로 표시", fontSize = 18.sp) },
+                                onClick = onMarkArrived,
+                            )
+                        }
                     }
                 }
             }
@@ -314,7 +333,7 @@ private fun CarDefaultRightPane(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(
-                    onClick = onIgnition,
+                    onClick = onReplayGuideSpeech,
                     modifier = Modifier
                         .size(64.dp)
                         .border(1.dp, CarLineStrong, RoundedCornerShape(16.dp)),
@@ -329,7 +348,17 @@ private fun CarDefaultRightPane(
             }
         }
 
-        // Idle 예매 카드는 좌측 타임라인. 우측은 상세(안내·도착·다음)만.
+        // 가는 길 팁 · Idle 예매는 좌측, 우측은 안내·도착·다음 상세
+        val tipStop = when (val p = state.phase) {
+            is TripPhase.Navigating -> state.trip.stops.firstOrNull { it.id == p.stopId }
+            is TripPhase.AwaitingNext -> state.trip.stops.firstOrNull { it.id == p.nextStopId }
+            is TripPhase.Arrived -> nextStopAfterArrived(state)
+            else -> null
+        }
+        if (tipStop != null) {
+            Spacer(Modifier.height(20.dp))
+            DestinationTipsCard(stop = tipStop, carMode = true)
+        }
         val bookingStops = if (state.phase is TripPhase.Idle) {
             emptyList()
         } else {
@@ -481,6 +510,16 @@ private fun RouteTimelinePane(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                     )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        state.trip.title.ifBlank {
+                            TripThemeAnalyzer.themeSentence(selected, state.planMap.companion)
+                        },
+                        color = CarText,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 22.sp,
+                    )
                     Spacer(Modifier.height(20.dp))
                     if (state.phase is TripPhase.Idle && sectionOverride != null) {
                         selected.forEachIndexed { index, stop ->
@@ -490,6 +529,7 @@ private fun RouteTimelinePane(
                                 caption = if (index == 0) "첫 목적지" else "대기",
                                 state = if (index == 0) StopState.Current else StopState.Upcoming,
                                 isLast = index == selected.lastIndex,
+                                etaLabel = TripThemeAnalyzer.etaIntoStop(selected, index)?.combined,
                             )
                         }
                     } else if (state.phase !is TripPhase.Idle) {
@@ -513,6 +553,7 @@ private fun RouteTimelinePane(
                                 caption = caption,
                                 state = stopState,
                                 isLast = index == selected.lastIndex,
+                                etaLabel = TripThemeAnalyzer.etaIntoStop(selected, index)?.combined,
                             )
                         }
                     }
@@ -522,6 +563,16 @@ private fun RouteTimelinePane(
                         color = CarTextSub,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        state.trip.title.ifBlank {
+                            TripThemeAnalyzer.themeSentence(selected, state.planMap.companion)
+                        },
+                        color = CarText,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 22.sp,
                     )
                     Spacer(Modifier.height(20.dp))
                     state.trip.stops.forEach { stop ->

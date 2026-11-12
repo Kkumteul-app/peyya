@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Peyya — 실행 탭</title>
+<script>if(/[?&]embed=1(?:&|$)/.test(location.search))document.documentElement.classList.add('embed');</script>
+<link rel="stylesheet" href="nav-icons.css" />
+<style>
+  :root {
+    --brand: #2F6BFF;
+    --ink: #1A1A1A;
+    --ink-sub: #3D434D;
+    --ink-dim: #5B6270;
+    --soft: #F1F3F6;
+    --line: #D9DDE3;
+    --canvas: #fff;
+    --danger: #C62828;
+    --ok: #1B8A4A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 16px 48px;
+    font-family: "Pretendard","Noto Sans KR",system-ui,sans-serif;
+    background: #E6EAF0; color: var(--ink);
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--ink-dim); font-size: 13px; margin: 0 0 14px; line-height: 1.45; max-width: 720px; }
+  .modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .modes button {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--ink-sub);
+  }
+  .modes button.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .phone {
+    width: 390px; height: 844px; margin: 0 auto; border-radius: 36px; overflow: hidden;
+    border: 1px solid #C8CED8; background: var(--canvas); display: flex; flex-direction: column;
+    box-shadow: 0 18px 40px rgba(26, 40, 70, .12);
+  }
+  .status {
+    height: 44px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 700;
+  }
+  .body { flex: 1; overflow: auto; padding: 8px 20px 12px; }
+  .top { display: flex; justify-content: space-between; align-items: center; height: 44px; margin-bottom: 12px; }
+  .brand { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+  .mock { background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .now {
+    background: var(--brand); color: #fff; border-radius: 20px; padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .now .phase-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .now .phase { font-size: 13px; font-weight: 700; opacity: .9; }
+  .now .eta { font-size: 13px; font-weight: 800; white-space: nowrap; }
+  .now h2 { margin: 0; font-size: 26px; line-height: 1.25; font-weight: 800; }
+  .now .subline { margin: 0; font-size: 14px; opacity: .95; }
+  .theme-label { font-size: 12px; font-weight: 700; color: var(--ink-dim); margin: 16px 0 4px; }
+  .theme { font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.4; margin: 0 0 10px; }
+  .now .spoken {
+    margin-top: 4px; padding: 10px 12px; border-radius: 12px;
+    background: rgba(255,255,255,.16); font-size: 13px; line-height: 1.4;
+  }
+  .sec { margin: 16px 0 6px; font-size: 13px; font-weight: 700; color: var(--ink-dim); }
+  .stop {
+    display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stop:last-child { border-bottom: 0; }
+  .stop .num {
+    width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto;
+    display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff;
+    background: #A8B0BC; margin-top: 2px;
+  }
+  .stop.cur .num { background: var(--brand); }
+  .stop.done .num { background: var(--ok); }
+  .stop .meta { flex: 1; min-width: 0; }
+  .stop .eta {
+    flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--ink-dim);
+    white-space: nowrap; padding-top: 2px;
+  }
+  .stop.cur .eta { color: var(--brand); }
+  .stop.done .eta { display: none; }
+  .stop h3 { margin: 0 0 2px; font-size: 15px; font-weight: 700; }
+  .stop p { margin: 0; font-size: 12px; color: var(--ink-dim); }
+  .idle-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .idle-row input { width: 18px; height: 18px; accent-color: var(--brand); }
+  .idle-row h3 { margin: 0 0 2px; font-size: 15px; }
+  .idle-row p { margin: 0; font-size: 12px; color: var(--ink-dim); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip {
+    background: var(--soft); border-radius: 999px; padding: 8px 12px;
+    font-size: 12px; font-weight: 700; color: var(--ink-sub);
+  }
+  .note { font-size: 13px; color: var(--ink-dim); margin: 14px 0 0; line-height: 1.4; }
+  .dock {
+    padding: 12px 20px 18px; border-top: 1px solid var(--line); background: #fff;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cta {
+    width: 100%; height: 52px; border: 0; border-radius: 14px;
+    background: var(--brand); color: #fff; font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+  .cta:disabled { background: #E3E6EA; color: #8A8F98; cursor: default; }
+  .cta.ghost {
+    background: var(--soft); color: var(--ink); font-weight: 700;
+  }
+  .facility { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 4px; }
+  .facility span {
+    background: rgba(47,107,255,.12); color: var(--ink); border-radius:999px;
+    padding:6px 10px; font-size:12px; font-weight:700;
+  }
+  .spoken {
+    margin-top: 10px; padding: 12px 14px; border-radius: 14px;
+    background: rgba(255,255,255,.18); font-size: 13px; line-height: 1.45;
+  }
+  .spoken .label { font-size: 11px; font-weight: 800; opacity: .9; margin-bottom: 4px; }
+  .booking, .tips {
+    margin-top: 14px; padding: 14px; border-radius: 14px; background: var(--soft);
+    border: 1px solid var(--line);
+  }
+  .booking h4, .tips h4 { margin: 0 0 6px; font-size: 14px; }
+  .tips .lead { margin: 0 0 10px; font-size: 12px; color: var(--ink-dim); line-height: 1.4; }
+  .tips .block { margin-top: 10px; }
+  .tips .block strong { display: block; color: var(--brand); font-size: 12px; margin-bottom: 4px; }
+  .booking li, .tips li { font-size: 13px; color: var(--ink-sub); margin: 4px 0; }
+
+  .toast {
+    margin: 8px 0 12px; padding: 12px 14px; border-radius: 14px;
+    background: #1A1A1A; color: #fff; font-size: 13px; font-weight: 700; line-height: 1.4;
+  }
+  .toast small { display:block; font-weight:500; opacity:.75; margin-top:4px; }
+  .invite {
+    background: var(--soft); border-radius: 20px; padding: 20px; margin-bottom: 12px;
+  }
+  .invite .kicker { color: var(--brand); font-size: 12px; font-weight: 800; }
+  .invite h2 { margin: 8px 0 6px; font-size: 24px; line-height: 1.25; }
+  .invite p { margin: 0; font-size: 14px; color: var(--ink-sub); line-height: 1.45; }
+  .stars { display:flex; gap:8px; margin: 16px 0 8px; }
+  .stars button {
+    width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--soft);
+    font-size: 22px; cursor: pointer; color: #C8CED8;
+  }
+  .stars button.on { color: #F5A623; background: #FFF4E0; }
+  .comment {
+    width: 100%; min-height: 96px; border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px; font-size: 14px; font-family: inherit; resize: vertical;
+  }
+  html.embed, html.embed body {
+    width: 100%; height: 100%; margin: 0; padding: 0; background: #fff; overflow: hidden;
+  }
+  html.embed h1, html.embed .sub, html.embed .modes { display: none !important; }
+  html.embed .phone {
+    width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Peyya — 실행 탭</h1>
+  <p class="sub">
+    실행이 끝나면 <b>알림</b>으로 안내하고, 장소마다 <b>별점·한 줄 후기</b>를 남길 수 있습니다.
+  </p>
+  <div class="modes">
+    <button type="button" class="on" data-phase="idle">대기 · 출발 전</button>
+    <button type="button" data-phase="nav">안내 중</button>
+    <button type="button" data-phase="await">다음 안내 제안</button>
+    <button type="button" data-phase="done">완료</button>
+    <button type="button" data-phase="review">리뷰 · 별점</button>
+  </div>
+
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>LTE</span></div>
+    <div class="body" id="body"></div>
+    <div class="dock" id="dock"></div>
+    <nav class="nav">
+      <a href="phone-plan-connect.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>
+        계획
+      </a>
+      <a class="on" href="#">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>
+        실행
+      </a>
+      <a href="phone-recommend.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>
+        추천
+      </a>
+      <a href="phone-my.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>
+        마이
+      </a>
+    </nav>
+  </div>
+
+<script>
+const STOPS = [
+  { id: 'museum', name: '국립중앙박물관', address: '서울 용산구 서빙고로 137', booking: true, eta: '48분 · 38.2km', arrive: '10:48 도착 · 가능' },
+  { id: 'food', name: '용산 한식 담소', address: '서울 용산구 한강대로 405 인근', booking: false, eta: '12분 · 2.4km', arrive: '13:00 도착 · 가능' },
+];
+const THEME = '가족과 함께 박물관을 둘러보고 근처에서 식사하는 하루예요.';
+let phase = 'idle';
+let selected = { museum: true, food: true };
+let reviewStep = 'invite'; // invite | rate | saved
+let reviewIndex = 0;
+let reviewStars = 0;
+let reviewComment = '';
+let reviews = {};
+
+
+function render() {
+  document.querySelectorAll('.modes button').forEach(b => {
+    b.classList.toggle('on', b.dataset.phase === phase);
+  });
+  const body = document.getElementById('body');
+  const dock = document.getElementById('dock');
+  const sel = STOPS.filter(s => selected[s.id]);
+  const count = sel.length;
+  const totalEta = '60분 · 40.6km';
+  const themeBlock = `
+    <div class="theme-label">오늘의 계획</div>
+    <p class="theme">${THEME}</p>`;
+
+  if (phase === 'review') {
+    body.innerHTML = renderReviewBody(sel);
+    dock.innerHTML = renderReviewDock(sel);
+    bindReview();
+    return;
+  }
+
+  const now = (() => {
+    if (phase === 'idle') {
+      return `
+        <div class="now">
+          <div class="phase-row">
+            <div class="phase">대기 · 0 / ${count}</div>
+            <div class="eta">${totalEta}</div>
+          </div>
+          <h2>오늘은 이 순서로<br/>다녀요</h2>
+          <p class="subline">계획 탭에서 담은 코스예요. 들를 곳을 고르고 출발하세요.</p>
+        </div>`;
+    }
+    if (phase === 'nav') {
+      return `
+        <div class="now">
+          <div class="phase-row">
+            <div class="phase">안내 중 · 1 / ${count}</div>
+            <div class="eta">${STOPS[0].eta}</div>
+          </div>
+          <h2>국립중앙박물관으로<br/>가는 중</h2>
+          <p class="subline">다음 · 용산 한식 담소</p>
+          <p class="subline" style="opacity:.85">길안내는 차량 내비가 맡아요.</p>
+          <div class="spoken">
+            <div class="label">내비 음성 · 목적지 브리핑</div>
+            국립중앙박물관 안내를 시작합니다. 가는 길에 참고하세요.
+          </div>
+        </div>`;
+    }
+    if (phase === 'await') {
+      return `
+        <div class="now">
+          <div class="phase-row">
+            <div class="phase">다음 제안 · 1 / ${count}</div>
+            <div class="eta">${STOPS[1].eta}</div>
+          </div>
+          <h2>용산 한식 담소로<br/>안내할까요?</h2>
+          <p class="subline">안내를 시작하면 차량 내비로 넘겨요.</p>
+          <div class="spoken">「박물관 잘 보셨나요? 다음으로 맛집 안내할까요?」</div>
+        </div>`;
+    }
+    return `
+      <div class="toast">
+        알림 · 페이야
+        <small>오늘 루트가 끝났어요 · 별점과 한 줄 후기를 남겨 주세요</small>
+      </div>
+      <div class="now">
+        <div class="phase-row">
+          <div class="phase">완료 · ${count} / ${count}</div>
+        </div>
+        <h2>오늘 루트를 모두<br/>다녀왔어요</h2>
+        <p class="subline">알림으로도 안내했어요. 별점·후기를 남겨 볼까요?</p>
+      </div>`;
+  })();
+
+  let middle = themeBlock;
+  if (phase === 'idle') {
+    middle += STOPS.map(s => `
+      <label class="idle-row">
+        <input type="checkbox" data-id="${s.id}" ${selected[s.id] ? 'checked' : ''} />
+        <div>
+          <h3>${s.name}</h3>
+          <p>${s.address}</p>
+        </div>
+      </label>`).join('');
+  } else if (phase === 'done') {
+    middle += `
+      <div class="invite">
+        <div class="kicker">알림 · 페이야</div>
+        <h2>별점과 후기를<br/>남겨 주세요</h2>
+        <p>${THEME}<br/>${count}곳 방문 완료 · 장소마다 별점(필수)과 한 줄 메모(선택)</p>
+      </div>`;
+    middle += sel.map((s,i) => `
+      <div class="stop done">
+        <div class="num">${i+1}</div>
+        <div class="meta"><h3>${s.name}</h3><p>용산구 · 다녀왔어요</p></div>
+      </div>`).join('');
+  } else {
+    const rows = sel.map((s, i) => {
+      let cls = '';
+      let cap = s.address;
+      if (phase === 'nav') {
+        if (i === 0) { cls = 'cur'; cap = '용산구 · 지금 가는 곳'; }
+        else { cap = '용산구 · 다음'; }
+      } else if (phase === 'await') {
+        if (i === 0) { cls = 'done'; cap = '용산구 · 다녀왔어요'; }
+        else { cls = 'cur'; cap = '용산구 · 다음 장소'; }
+      }
+      return `
+        <div class="stop ${cls}">
+          <div class="num">${i + 1}</div>
+          <div class="meta"><h3>${s.name}</h3><p>${cap}</p><p>${s.arrive || ''}</p></div>
+          <div class="eta">${s.eta}</div>
+        </div>`;
+    }).join('');
+    middle += rows;
+  }
+
+  body.innerHTML = `
+    <div class="top"><div class="brand">페이야</div><span class="mock">데모</span></div>
+    ${now}${middle}`;
+
+  body.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => {
+      selected[cb.dataset.id] = cb.checked;
+      render();
+    };
+  });
+
+  if (phase === 'idle') {
+    dock.innerHTML = `<button class="cta" id="primary" ${count ? '' : 'disabled'}>운전 시작</button>`;
+    document.getElementById('primary').onclick = () => { phase = 'nav'; render(); };
+  } else if (phase === 'nav') {
+    dock.innerHTML = `<button class="cta ghost" id="arrived">도착으로 표시 (데모)</button>`;
+    document.getElementById('arrived').onclick = () => { phase = 'await'; render(); };
+  } else if (phase === 'await') {
+    dock.innerHTML = `
+      <button class="cta" id="primary">안내 시작</button>
+      <button class="cta ghost" id="skip">건너뛰기</button>`;
+    document.getElementById('primary').onclick = () => { phase = 'done'; reviewStep='invite'; render(); };
+    document.getElementById('skip').onclick = () => { phase = 'done'; reviewStep='invite'; render(); };
+  } else {
+    dock.innerHTML = `
+      <button class="cta" id="primary">별점·후기 작성</button>
+      <button class="cta ghost" id="later">나중에</button>`;
+    document.getElementById('primary').onclick = () => {
+      phase = 'review'; reviewStep = 'rate'; reviewIndex = 0; reviewStars = 0; reviewComment = '';
+      render();
+    };
+    document.getElementById('later').onclick = () => { phase = 'idle'; render(); };
+  }
+}
+
+function renderReviewBody(sel) {
+  if (reviewStep === 'saved') {
+    return `
+      <div class="top"><div class="brand">페이야</div><span class="mock">데모</span></div>
+      <div class="invite">
+        <div class="kicker">저장 완료</div>
+        <h2>리뷰를 남겼어요</h2>
+        <p>다음에 비슷한 코스를 고르는 데 쓰여요.</p>
+      </div>`;
+  }
+  if (reviewStep === 'invite') {
+    return `
+      <div class="top"><div class="brand">페이야</div><span class="mock">데모</span></div>
+      <div class="toast">알림 · 페이야<small>오늘 루트가 끝났어요</small></div>
+      <div class="invite">
+        <div class="kicker">알림 · 페이야</div>
+        <h2>오늘 루트가 끝났어요</h2>
+        <p>${THEME}<br/>${sel.length}곳을 다녀왔어요. 별점과 한 줄 후기를 남겨 주세요.</p>
+      </div>
+      ${sel.map((s,i)=>`<div class="stop done"><div class="num">${i+1}</div><div class="meta"><h3>${s.name}</h3><p>방문함</p></div></div>`).join('')}`;
+  }
+  const stop = sel[reviewIndex] || sel[0];
+  const starsHtml = [1,2,3,4,5].map(n =>
+    `<button type="button" data-star="${n}" class="${reviewStars>=n?'on':''}">★</button>`
+  ).join('');
+  return `
+    <div class="top"><div class="brand">페이야</div><span class="mock">데모</span></div>
+    <div class="sec">장소 ${reviewIndex+1} / ${sel.length}</div>
+    <h2 style="font-size:26px;margin:0 0 6px">${stop.name}</h2>
+    <p style="margin:0;color:var(--ink-dim);font-size:14px">${stop.address} · 별점은 필수, 글은 선택</p>
+    <div class="stars" id="stars">${starsHtml}</div>
+    <div class="sec">한 줄 메모 (선택)</div>
+    <textarea class="comment" id="comment" placeholder="짧게 남겨 주세요">${reviewComment}</textarea>`;
+}
+
+function renderReviewDock(sel) {
+  if (reviewStep === 'saved') {
+    return `<button class="cta" id="primary">확인</button>`;
+  }
+  if (reviewStep === 'invite') {
+    return `
+      <button class="cta" id="primary">별점·후기 작성</button>
+      <button class="cta ghost" id="later">나중에</button>`;
+  }
+  const last = reviewIndex >= sel.length - 1;
+  return `
+    <button class="cta" id="primary" ${reviewStars? '' : 'disabled'}>${last ? '완료' : '다음 장소'}</button>
+    <button class="cta ghost" id="skipStop">이 장소 건너뛰기</button>`;
+}
+
+function bindReview() {
+  const sel = STOPS.filter(s => selected[s.id]);
+  document.querySelectorAll('#stars [data-star]').forEach(btn => {
+    btn.onclick = () => { reviewStars = Number(btn.dataset.star); render(); };
+  });
+  const comment = document.getElementById('comment');
+  if (comment) comment.oninput = () => { reviewComment = comment.value; };
+  const primary = document.getElementById('primary');
+  const later = document.getElementById('later');
+  const skipStop = document.getElementById('skipStop');
+  if (later) later.onclick = () => { phase = 'idle'; reviewStep='invite'; render(); };
+  if (skipStop) skipStop.onclick = () => {
+    reviews[sel[reviewIndex].id] = { stars: 0, comment: '', skipped: true };
+    advanceReview(sel);
+  };
+  if (primary) primary.onclick = () => {
+    if (reviewStep === 'saved') { phase = 'idle'; reviewStep='invite'; render(); return; }
+    if (reviewStep === 'invite') { reviewStep='rate'; reviewIndex=0; reviewStars=0; reviewComment=''; render(); return; }
+    if (!reviewStars) return;
+    reviews[sel[reviewIndex].id] = { stars: reviewStars, comment: reviewComment, skipped: false };
+    advanceReview(sel);
+  };
+}
+
+function advanceReview(sel) {
+  if (reviewIndex >= sel.length - 1) {
+    reviewStep = 'saved';
+  } else {
+    reviewIndex += 1;
+    reviewStars = 0;
+    reviewComment = '';
+  }
+  render();
+}
+
+
+document.querySelectorAll('.modes button').forEach(btn => {
+  btn.onclick = () => { phase = btn.dataset.phase; render(); };
+});
+render();
+</script>
+<script src="preview-embed.js"></script>
+</body>
+</html>

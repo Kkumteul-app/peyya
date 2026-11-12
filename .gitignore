@@ -1,6 +1,7 @@
 *.iml
 .gradle/
 local.properties
+docs/ui-previews/vworld-config.local.js
 .idea/
 .DS_Store
 captures/

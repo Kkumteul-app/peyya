@@ -32,21 +32,24 @@ class ReviewUiVisibilityTest {
     @Test
     fun idleWithoutOfferOrReview_hidesReviewCourseUi() {
         assertFalse(baseState().showsReviewOrCourseUi())
+        assertFalse(baseState().showsInlineCourseCard())
     }
 
     @Test
-    fun idleWithCourseOffer_showsReviewCourseUi() {
+    fun idleWithCourseOffer_keepsPlanHome_showsInlineCard() {
         val state = baseState().copy(phase = TripPhase.Idle, courseOffer = sampleOffer())
-        assertTrue(state.showsReviewOrCourseUi())
+        assertFalse(state.showsReviewOrCourseUi())
+        assertTrue(state.showsInlineCourseCard())
     }
 
     @Test
-    fun navigatingWithCourseOffer_hidesCourseCard() {
+    fun navigatingWithCourseOffer_hidesInlineCard() {
         val state = baseState().copy(
             phase = TripPhase.Navigating("museum"),
             courseOffer = sampleOffer(),
         )
         assertFalse(state.showsReviewOrCourseUi())
+        assertFalse(state.showsInlineCourseCard())
     }
 
     @Test
@@ -60,13 +63,16 @@ class ReviewUiVisibilityTest {
                 stops = trip.stops,
                 step = ReviewUiStep.Intro,
             ),
+            courseOffer = sampleOffer(),
         )
         assertTrue(state.showsReviewOrCourseUi())
+        assertFalse(state.showsInlineCourseCard())
     }
 
     @Test
     fun courseAppliedConfirm_showsReviewCourseUi() {
         val state = baseState().copy(courseAppliedConfirm = true)
         assertTrue(state.showsReviewOrCourseUi())
+        assertFalse(state.showsInlineCourseCard())
     }
 }

@@ -12,6 +12,7 @@ import com.peyya.app.review.ReviewSessionStarter
 import com.peyya.app.review.ReviewStore
 import com.peyya.app.review.ReviewSyncPort
 import com.peyya.app.service.GatewayFactory
+import com.peyya.app.service.ReviewCompletionNotifier
 import com.peyya.app.service.SpeechGuide
 
 class TripViewModelFactory(
@@ -31,6 +32,7 @@ class TripViewModelFactory(
         val speech = SpeechGuide(appContext)
         reviewStore.loadSeedIfNeeded()
         val starter = ReviewSessionStarter(reviewStore)
+        ReviewCompletionNotifier.ensureChannel(appContext)
         return TripViewModel(
             navi = gateways.navi,
             ignition = gateways.ignition,
@@ -40,7 +42,8 @@ class TripViewModelFactory(
             reviewStore = reviewStore,
             reviewSessionStarter = starter,
             reviewSync = reviewSync,
-            courseCatalog = listOf(PresetTrips.weekendMuseumTrip),
+            courseCatalog = PresetTrips.courseCatalog,
+            appContext = appContext.applicationContext,
             onTripCompleted = onTripCompleted,
         ) as T
     }

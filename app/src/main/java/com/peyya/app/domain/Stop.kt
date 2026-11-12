@@ -15,4 +15,17 @@ data class Stop(
     val bookingUrl: String? = null,
     /** 출발 전 준비 체크리스트 (예: 확인증, 주차). */
     val prepChecklist: List<String> = emptyList(),
-)
+    /** 가는 길에 미리 볼 하이라이트 (볼거리·동선). */
+    val highlights: List<String> = emptyList(),
+    /** 주차·입차 팁. */
+    val parkingTips: List<String> = emptyList(),
+    /** 아이·시니어 동반 팁. */
+    val familyTips: List<String> = emptyList(),
+    val openingHours: OpeningHours? = null,
+    val category: PlaceCategory = PlaceCategory.ANCHOR,
+) {
+    fun hasOnTheWayTips(): Boolean =
+        highlights.isNotEmpty() || parkingTips.isNotEmpty() || familyTips.isNotEmpty()
+
+    fun resolvedHours(): OpeningHours = openingHours ?: category.defaultOpeningHours()
+}

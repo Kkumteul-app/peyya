@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Peyya — 계획(브이월드 지도·코스)</title>
+<script>if(/[?&]embed=1(?:&|$)/.test(location.search))document.documentElement.classList.add('embed');</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vworld-config.local.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; padding:20px 16px 40px; font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif; background:#0E1116; color:#F2F4F7; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:#A8B0BC; font-size:13px; margin:0 0 16px; line-height:1.45; max-width:720px; }
+  .phone {
+    position:relative;
+    width:390px; height:844px; margin:0 auto; border-radius:36px; overflow:hidden;
+    border:1px solid #2C343E; background:#1A1F26; display:flex; flex-direction:column;
+  }
+  .top { padding:12px 14px 8px; }
+  .search {
+    height:48px; border-radius:14px; background:#252B33; display:flex; align-items:center;
+    padding:0 14px; gap:10px;
+  }
+  .search input {
+    flex:1; border:0; outline:0; background:transparent; color:#F2F4F7; font-size:15px;
+  }
+  .chips { display:flex; gap:8px; margin-top:8px; overflow:auto; }
+  .chip { padding:8px 14px; border-radius:20px; background:#2A313A; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
+  .chip.on { background:#2ED573; color:#0B1210; }
+  .hint { margin-top:6px; color:#A8B0BC; font-size:11px; }
+  #map { flex:1; margin:0 12px; border-radius:16px; border:1px solid #2C343E; min-height:240px; background:#1A1F26; }
+  .sheet {
+    height:360px; background:#12151A; border-radius:22px 22px 0 0; padding:12px 16px 14px;
+    display:flex; flex-direction:column;
+  }
+  .handle { width:36px; height:4px; border-radius:2px; background:#2C343E; margin:0 auto 10px; }
+  .sheet h2 { margin:0; font-size:17px; }
+  .sheet .meta { margin:4px 0 8px; color:#A8B0BC; font-size:12px; }
+  .list { flex:1; overflow:auto; }
+  .row {
+    display:flex; gap:10px; align-items:center; background:#1E242C; border-radius:14px;
+    padding:10px; margin-bottom:8px; cursor:pointer;
+  }
+  .thumb {
+    width:48px; height:48px; border-radius:10px; background:#2A313A;
+    display:grid; place-items:center; font-size:11px; font-weight:700; color:#A8B0BC; flex:0 0 auto;
+    overflow:hidden;
+  }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .row h3 { margin:0 0 2px; font-size:14px; }
+  .row p { margin:0; font-size:12px; color:#A8B0BC; }
+  .amenity { margin:2px 0 0; font-size:11px; color:#4C8DFF; font-weight:600; }
+  .sec .hint-kid { color:#4C8DFF; font-weight:500; font-size:11px; display:block; margin-top:2px; }
+  .act { margin-left:auto; border-radius:10px; padding:8px 10px; font-size:12px; font-weight:700; background:rgba(46,213,115,.16); color:#2ED573; white-space:nowrap; }
+  .act.del { background:rgba(255,90,90,.16); color:#FF5A5A; }
+  .act.blue { background:rgba(76,141,255,.16); color:#4C8DFF; }
+  .cta { width:100%; height:48px; border:0; border-radius:14px; background:#2ED573; color:#0B1210; font-size:15px; font-weight:800; }
+  .cta:disabled { opacity:.45; }
+  .warn { color:#FFB020; }
+  .sec { margin:12px 0 6px; font-size:14px; font-weight:700; }
+  .decision {
+    background:#1E242C; border-radius:14px; padding:12px; margin-bottom:10px;
+  }
+  .decision h3 { margin:0 0 6px; font-size:14px; }
+  .decision p { margin:0 0 10px; font-size:12px; color:#A8B0BC; line-height:1.45; }
+  .decision .btns { display:flex; gap:8px; }
+  .decision button {
+    flex:1; border:0; border-radius:12px; padding:12px 8px; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .decision .end { background:#2ED573; color:#0B1210; }
+  .decision .more { background:rgba(76,141,255,.2); color:#4C8DFF; }
+  .route-strip {
+    background:#1E242C; border-radius:12px; padding:10px; margin-bottom:8px; font-size:12px; color:#A8B0BC;
+  }
+  .route-strip strong { color:#F2F4F7; }
+  .timing, .companion { display:flex; gap:8px; margin-bottom:10px; }
+  .timing button, .companion button {
+    flex:1; border:0; border-radius:12px; padding:10px 6px; background:#2A313A; color:#F2F4F7;
+    font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .timing button.on { background:#2ED573; color:#0B1210; }
+  .companion button.on { background:#4C8DFF; color:#fff; }
+  .timing button small, .companion button small { display:block; font-weight:500; opacity:.75; margin-top:2px; font-size:10px; }
+  .depart {
+    display:flex; align-items:center; gap:8px; background:#2A313A; border-radius:12px;
+    padding:10px 12px; margin-bottom:8px;
+  }
+  .depart input {
+    flex:1; border:0; background:transparent; color:#F2F4F7; font-size:13px; font-weight:700;
+  }
+  .badge-ok { color:#2ED573; font-size:10px; font-weight:700; }
+  .badge-bad { color:#FF5A5A; font-size:10px; font-weight:700; }
+  .issue {
+    background:#1E242C; border:1px solid rgba(255,90,90,.45); border-radius:14px;
+    padding:12px; margin-bottom:8px;
+  }
+  .issue h4 { margin:0 0 4px; font-size:14px; }
+  .issue p { margin:0 0 8px; font-size:12px; color:#A8B0BC; line-height:1.4; }
+  .issue .alts { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .issue .alts button {
+    border:0; border-radius:999px; padding:8px 12px; background:rgba(76,141,255,.2);
+    color:#4C8DFF; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .issue .skip {
+    width:100%; border:0; border-radius:12px; padding:10px;
+    background:rgba(255,90,90,.18); color:#FF5A5A; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .cta-warn { color:#FF5A5A; font-size:12px; font-weight:700; margin:0 0 6px; }
+  .prefs-bar {
+    display:flex; align-items:center; gap:10px; background:#2A313A; border-radius:12px;
+    padding:10px 12px; margin-bottom:10px; cursor:pointer;
+  }
+  .prefs-bar .label { font-size:11px; color:#A8B0BC; font-weight:700; }
+  .prefs-bar .val { font-size:13px; font-weight:700; margin-top:2px; }
+  .prefs-bar .edit { margin-left:auto; color:#4C8DFF; font-size:12px; font-weight:700; }
+  .prefs-page {
+    flex:1; background:#12151A; padding:18px 16px 20px; overflow:auto;
+    display:flex; flex-direction:column; gap:14px; min-height:0;
+  }
+  .prefs-page.hidden { display:none; }
+  .prefs-page .brand { color:#2ED573; font-size:14px; font-weight:700; }
+  .prefs-page h3 { margin:0; font-size:24px; }
+  .prefs-page .lead { margin:0; font-size:14px; color:#A8B0BC; line-height:1.45; }
+  .plan-stage { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .plan-stage #map { flex:1; margin:0 12px; border-radius:16px; border:1px solid #2C343E; min-height:180px; }
+  .nav {
+    height:64px; border-top:1px solid #2C343E; display:grid; grid-template-columns:repeat(4,1fr);
+    background:#12151A; flex:0 0 auto;
+  }
+  .nav a {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    text-decoration:none; color:#A8B0BC; font-size:11px; font-weight:700;
+  }
+  .nav a.on { color:#2ED573; }
+  .nav svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .stop-row {
+    display:flex; align-items:center; gap:6px; margin:4px 0; color:#F2F4F7; font-size:12px;
+  }
+  .stop-row .ord {
+    width:18px; height:18px; border-radius:50%; display:grid; place-items:center;
+    font-size:9px; font-weight:800; color:#fff; flex:0 0 auto;
+  }
+  .stop-row .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  .stop-row .mv { border:0; background:transparent; color:#4C8DFF; font-weight:800; cursor:pointer; padding:2px 4px; }
+  .stop-row .mv:disabled { opacity:.3; cursor:default; }
+  .stop-row .rm { border:0; background:transparent; color:#A8B0BC; font-size:11px; font-weight:700; cursor:pointer; }
+  html.embed, html.embed body {
+    width:100%; height:100%; margin:0; padding:0; background:#1A1F26; overflow:hidden;
+  }
+  html.embed h1, html.embed .sub { display:none !important; }
+  html.embed .phone {
+    width:100%; height:100%; margin:0; border:0; border-radius:0; box-shadow:none;
+  }
+</style>
+</head>
+<body>
+  <h1>Peyya — 계획 (국토부 브이월드 · 여행 코스)</h1>
+  <p class="sub">
+    먼저 <b>누구와·언제·출발 일시</b>를 정한 뒤, 지도에서 검색해 경로를 구성합니다.
+    등록 가족·아이가 있으면 유모차·아기의자 가능 장소를 우선합니다.
+  </p>
+
+  <div class="phone">
+    <div class="prefs-page" id="prefsPage"></div>
+    <div class="plan-stage" id="planStage" style="display:none;flex:1;flex-direction:column;min-height:0;">
+      <div class="top">
+        <div class="search">
+          <span>⌕</span>
+          <input id="q" placeholder="장소, 주소 검색" autocomplete="off" />
+        </div>
+        <div class="chips">
+          <div class="chip on" data-chip="food">맛집</div>
+          <div class="chip" data-chip="sight">볼거리</div>
+          <div class="chip" data-chip="recommend">추천</div>
+          <div class="chip" data-chip="parking">주차장</div>
+        </div>
+        <div class="hint" id="sourceHint">브이월드 지도 로딩 중…</div>
+      </div>
+      <div id="map"></div>
+      <div class="sheet">
+        <div class="handle"></div>
+        <h2 id="sheetTitle">검색 전</h2>
+        <div class="meta" id="sheetMeta">장소를 검색하면 브이월드 결과가 표시됩니다</div>
+        <div class="list" id="list"></div>
+        <button class="cta" id="cta" disabled>도착지를 먼저 선택</button>
+      </div>
+    </div>
+    <nav class="nav">
+      <a class="on" href="#">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>
+        계획
+      </a>
+      <a href="phone-execute.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>
+        실행
+      </a>
+      <a href="phone-recommend.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>
+        추천
+      </a>
+      <a href="phone-my.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>
+        마이
+      </a>
+    </nav>
+  </div>
+
+<script>
+const KEY = window.VWORLD_API_KEY || "";
+const HOME = { name:'집', lat:37.4015, lng:126.9226 };
+const METRO_BBOX = '126.60,37.25,127.35,37.85';
+const LOCAL_KM = 80;
+
+/** 시연 가족: 아이(지우) 포함 → 유모차·아기의자 우선 */
+const FAMILY = { hasChild: true, childName: '지우' };
+
+/** 목적지(앵커) 좌표 기준으로 주변 추천 생성 — 집 기준 아님 */
+function nearbyFor(anchor) {
+  if (!anchor || !Number.isFinite(anchor.lat) || !Number.isFinite(anchor.lng)) {
+    return { food: [], sights: [], recommended: [] };
+  }
+  const area = areaLabel(anchor);
+  const mk = (name, dLat, dLng, kind, photo, amenity) => {
+    const lat = anchor.lat + dLat;
+    const lng = anchor.lng + dLng;
+    const d = distKm(anchor, { lat, lng });
+    const dist = d < 1 ? Math.round(d * 1000) + 'm' : d.toFixed(1) + 'km';
+    return {
+      name: area ? `${area} ${name}` : `${name} (근처)`,
+      address: `${anchor.name} 주변 · ${dist}`,
+      lat, lng, kind,
+      photo: 'places/' + photo,
+      amenity: amenity || '',
+    };
+  };
+  const food = (companion === 'family' && FAMILY.hasChild) ? [
+    mk('가족 한식당', 0.0045, 0.0030, 'food', 'food.jpg', '유모차 · 아기의자'),
+    mk('키즈 카페', -0.0035, 0.0045, 'food', 'cafe.jpg', '유모차 · 아기의자'),
+    mk('가족석 식당', 0.0025, -0.0040, 'food', 'food.jpg', '유모차 · 아기의자'),
+  ] : [
+    mk('한식당', 0.0045, 0.0030, 'food', 'food.jpg'),
+    mk('카페', -0.0035, 0.0045, 'food', 'cafe.jpg'),
+    mk('분식·국밥', 0.0025, -0.0040, 'food', 'food.jpg'),
+  ];
+  return {
+    food,
+    sights: [
+      mk('공원', -0.0050, 0.0020, 'sight', 'park.jpg'),
+      mk('문화공간', 0.0030, -0.0035, 'sight', 'museum.jpg'),
+      mk('전망·거리', 0.0060, 0.0050, 'sight', 'park.jpg'),
+    ],
+    recommended: [
+      mk('가족 추천 스팟', -0.0020, -0.0025, 'rec', 'park.jpg'),
+      mk('짧은 산책 코스', 0.0040, -0.0015, 'rec', 'road.jpg'),
+    ],
+  };
+}
+
+function areaLabel(p) {
+  const raw = `${p.address || ''} ${p.name || ''}`;
+  const m = raw.match(/[가-힣]+(?:구|시|군|동|읍|면)/g) || [];
+  return m.find(x => x.endsWith('구') || x.endsWith('시')) || m[0] || '';
+}
+
+const map = L.map('map', { zoomControl:false }).setView([37.46, 126.95], 11);
+const routeLayer = L.layerGroup().addTo(map);
+const resultLayer = L.layerGroup().addTo(map);
+let lastResults = [];
+let pending = null;
+let focus = null;
+let routeReady = false;
+let timing = 'now'; // now | weekend
+let companion = 'family'; // family | solo | friends
+let weekendSaved = false;
+let prefsReady = false;
+let route = [ HOME, { name:'국립중앙박물관', address:'서울 용산구 서빙고로 137', lat:37.52386, lng:126.98047, closedMon:true } ];
+const ALT_GALLERY = { name:'용산 아트갤러리', address:'서울 용산구 한강대로', lat:37.52890, lng:126.96840, closedMon:false };
+function defaultDepartLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + (5 - (d.getMinutes() % 5)) % 5);
+  d.setSeconds(0); d.setMilliseconds(0);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+let departLocal = defaultDepartLocal();
+function isMondayDepart() {
+  const d = new Date(departLocal);
+  return !Number.isNaN(d.getTime()) && d.getDay() === 1;
+}
+function visitBadge(p, i) {
+  if (i === 0) return '';
+  if (p.closedMon && isMondayDepart()) return `<div class="badge-bad">휴무 · 대체 권장</div>`;
+  return `<div class="badge-ok">도착 가능</div>`;
+}
+function issueCardsHtml() {
+  const issues = route.filter((p,i) => i>0 && p.closedMon && isMondayDepart());
+  if (!issues.length) return '';
+  return issues.map(p => `
+    <div class="issue">
+      <h4>${p.name}</h4>
+      <p>선택한 출발일이 월요일이에요. ${p.name}은(는) 월요일 휴관입니다.</p>
+      <div class="alts">
+        <button type="button" data-replace="${p.name}">${ALT_GALLERY.name}</button>
+      </div>
+      <button type="button" class="skip" data-skip="${p.name}">빼고 계속</button>
+    </div>
+  `).join('');
+}
+
+function setHint(text, warn) {
+  const el = document.getElementById('sourceHint');
+  el.textContent = text;
+  el.className = 'hint' + (warn ? ' warn' : '');
+}
+
+if (!KEY) {
+  setHint('vworld-config.local.js 키가 없습니다. 브이월드 지도를 쓸 수 없어요.', true);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OSM (브이월드 키 없음)', maxZoom: 19
+  }).addTo(map);
+} else {
+  L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/' + KEY + '/Base/{z}/{y}/{x}.png', {
+    attribution: '© 국토교통부 VWorld',
+    maxZoom: 19,
+  }).addTo(map);
+  setHint('국토교통부 브이월드 지도 · 검색어를 입력하세요');
+}
+
+function pin(color, label) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:26px;height:26px;border-radius:50%;background:${color};border:2px solid #fff;color:#fff;font:700 10px sans-serif;display:flex;align-items:center;justify-content:center">${label}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13]
+  });
+}
+
+function distKm(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLon = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat/2)**2 +
+    Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+function fitDetailed(points) {
+  if (!points.length) return;
+  if (points.length === 1) {
+    map.setView(points[0], 14);
+    return;
+  }
+  const b = L.latLngBounds(points);
+  if ((b.getNorth() - b.getSouth()) > 1.2 || (b.getEast() - b.getWest()) > 1.5) {
+    map.setView(points[0], 13);
+    return;
+  }
+  map.fitBounds(b, { padding:[48, 48], maxZoom:13 });
+}
+
+function drawRoute() {
+  routeLayer.clearLayers();
+  const ll = route.map(p => [p.lat, p.lng]);
+  ll.forEach((p,i) => {
+    const color = i===0?'#2ED573':(i===ll.length-1?'#FF5A5A':'#4C8DFF');
+    const label = i===0?'출':(i===ll.length-1?'도':String(i));
+    L.marker(p, {icon: pin(color,label)}).bindTooltip(route[i].name, {permanent:true, direction:'bottom'}).addTo(routeLayer);
+  });
+  if (ll.length>=2) {
+    L.polyline(ll, {color:'#2ED573', weight:5}).addTo(routeLayer);
+  }
+  fitDetailed(ll);
+}
+
+function localizeResults(items, query) {
+  const q = (query || '').trim();
+  const scored = items.map(p => {
+    const d = distKm(HOME, p);
+    const nameScore = p.name === q ? 0 : (p.name.includes(q) ? 1 : 3);
+    return { p, d, nameScore };
+  }).sort((a,b) => a.nameScore - b.nameScore || a.d - b.d);
+  const local = scored.filter(s => s.d <= LOCAL_KM).map(s => ({
+    ...s.p,
+    address: (s.p.address || '') + ` · ${s.d < 1 ? Math.round(s.d*1000)+'m' : s.d.toFixed(1)+'km'}`,
+  }));
+  if (local.length) return local.slice(0, 8);
+  return scored.slice(0, 2).map(s => s.p);
+}
+
+function drawSearchMarkers(items) {
+  resultLayer.clearLayers();
+  if (!items.length) return;
+  const points = items.map(p => [p.lat, p.lng]);
+  items.forEach((p, i) => {
+    L.circleMarker([p.lat, p.lng], {
+      radius: 8, color:'#fff', weight:2, fillColor:'#2ED573', fillOpacity:0.95
+    }).bindTooltip((i+1) + '. ' + p.name, {direction:'top'}).addTo(resultLayer);
+  });
+  fitDetailed(points);
+}
+
+function isOnRoute(name) {
+  return route.some(r => r.name === name);
+}
+
+function updateCta() {
+  const cta = document.getElementById('cta');
+  let warn = document.getElementById('ctaWarn');
+  if (!warn) {
+    warn = document.createElement('p');
+    warn.id = 'ctaWarn';
+    warn.className = 'cta-warn';
+    cta.parentNode.insertBefore(warn, cta);
+  }
+  const issueCount = route.filter((p,i) => i>0 && p.closedMon && isMondayDepart()).length;
+  warn.textContent = (!prefsReady) ? '' : (issueCount > 0 ? `${issueCount}곳 방문 어려움 · 대체하거나 빼고 계속할 수 있어요` : '');
+  if (!prefsReady) return;
+  if (pending) {
+    cta.disabled = true;
+    cta.textContent = '위에서 종료/추가를 선택하세요';
+    return;
+  }
+  if (timing === 'weekend' && weekendSaved) {
+    cta.disabled = true;
+    cta.textContent = '주말 계획 저장됨';
+    return;
+  }
+  if (timing === 'weekend' && routeReady) {
+    cta.disabled = false;
+    cta.textContent = '주말 계획으로 저장';
+    return;
+  }
+  if (routeReady) {
+    cta.disabled = false;
+    cta.textContent = '이 경로로 바로 실행';
+    return;
+  }
+  if (route.length >= 2) {
+    cta.disabled = false;
+    cta.textContent = timing === 'weekend' ? '길찾기 후 저장' : '길찾기';
+    return;
+  }
+  cta.disabled = true;
+  cta.textContent = '도착지를 먼저 선택';
+}
+
+function companionLabel() {
+  return companion === 'family' ? '김씨 가족' : (companion === 'solo' ? '혼자' : '연인·친구');
+}
+function timingLabel() {
+  return timing === 'now' ? '바로 실행' : '주말 계획';
+}
+function prefsSummaryHtml() {
+  if (!prefsReady) return '';
+  const d = new Date(departLocal);
+  const departTxt = Number.isNaN(d.getTime()) ? departLocal : `${d.getMonth()+1}월 ${d.getDate()}일 ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return `
+    <div class="prefs-bar" id="prefsBar">
+      <div>
+        <div class="label">여행 설정</div>
+        <div class="val">${companionLabel()} · ${timingLabel()} · ${departTxt}</div>
+      </div>
+      <div class="edit">변경</div>
+    </div>
+  `;
+}
+function prefsPageHtml() {
+  return `
+    <div class="brand">페이야</div>
+    <h3>여행 전에 알려 주세요</h3>
+    <p class="lead">누구와 갈지, 언제 출발할지를 먼저 정한 뒤 지도에서 경로를 구성해요.</p>
+    <div class="sec">누구와 갈까요?</div>
+    <div class="companion">
+      <button type="button" class="${companion==='family'?'on':''}" data-companion="family">김씨 가족<small>등록 가족과</small></button>
+      <button type="button" class="${companion==='solo'?'on':''}" data-companion="solo">혼자<small>혼자 가는 코스</small></button>
+      <button type="button" class="${companion==='friends'?'on':''}" data-companion="friends">연인·친구<small>소규모 동행</small></button>
+    </div>
+    <div class="sec">언제 갈까요?</div>
+    <div class="timing">
+      <button type="button" class="${timing==='now'?'on':''}" data-timing="now">바로 실행<small>지금 이 경로로 출발</small></button>
+      <button type="button" class="${timing==='weekend'?'on':''}" data-timing="weekend">주말 계획<small>이번 주말에 갈 코스</small></button>
+    </div>
+    <div class="sec">출발 일시</div>
+    <div class="depart">
+      <input type="datetime-local" id="departAt" value="${departLocal}" />
+    </div>
+    <p class="amenity">날짜·시간을 바꾸면 운영시간에 맞춰 방문 가능 여부를 다시 봐요</p>
+    <button type="button" class="cta" id="prefsConfirm">설정 완료 · 지도에서 경로 짜기</button>
+  `;
+}
+function renderPrefsStep() {
+  const page = document.getElementById('prefsPage');
+  const stage = document.getElementById('planStage');
+  if (!page || !stage) return;
+  if (prefsReady) {
+    page.classList.add('hidden');
+    stage.style.display = 'flex';
+    return;
+  }
+  page.classList.remove('hidden');
+  stage.style.display = 'none';
+  page.innerHTML = prefsPageHtml();
+  bindPrefsControls();
+}
+function bindPrefsControls() {
+  document.querySelectorAll('#prefsPage [data-companion]').forEach(btn => {
+    btn.onclick = () => { companion = btn.dataset.companion; renderPrefsStep(); };
+  });
+  document.querySelectorAll('#prefsPage [data-timing]').forEach(btn => {
+    btn.onclick = () => {
+      timing = btn.dataset.timing;
+      if (timing === 'now') weekendSaved = false;
+      renderPrefsStep();
+    };
+  });
+  const departInput = document.getElementById('departAt');
+  if (departInput) {
+    departInput.onchange = () => {
+      departLocal = departInput.value || defaultDepartLocal();
+      renderPrefsStep();
+    };
+  }
+  const confirm = document.getElementById('prefsConfirm');
+  if (confirm) {
+    confirm.onclick = () => {
+      prefsReady = true;
+      setHint('여행 설정을 저장했어요 · 지도에서 경로를 짜 보세요');
+      renderPrefsStep();
+      if (typeof map !== 'undefined' && map) {
+        setTimeout(() => { try { map.invalidateSize(); drawRoute(); } catch (_) {} }, 50);
+      }
+      renderSheet();
+    };
+  }
+}
+
+function routeEditorHtml() {
+  if (route.length < 1) return '';
+  const issueCount = route.filter((p,i) => i>0 && p.closedMon && isMondayDepart()).length;
+  const rows = route.map((p, i) => {
+    const role = i===0 ? '출발' : (i===route.length-1 ? '도착' : '경유');
+    const color = i===0 ? '#2ED573' : (i===route.length-1 ? '#FF5A5A' : '#4C8DFF');
+    const label = (i===0 || i===route.length-1) ? role.charAt(0) : String(i);
+    const canMove = i > 0;
+    return `
+      <div class="stop-row" data-idx="${i}">
+        <div class="ord" style="background:${color}">${label}</div>
+        <div class="name" style="flex:1">
+          ${role} · ${p.name}
+          ${visitBadge(p, i)}
+        </div>
+        ${canMove ? `
+          <button type="button" class="mv" data-move="-1" data-idx="${i}" ${i<=1?'disabled':''}>▲</button>
+          <button type="button" class="mv" data-move="1" data-idx="${i}" ${i>=route.length-1?'disabled':''}>▼</button>
+          ${route.length>2 ? `<button type="button" class="rm" data-rm="${i}">삭제</button>` : ''}
+        ` : ''}
+      </div>`;
+  }).join('');
+  return `
+    <div class="route-strip">
+      <strong>경로 순서</strong> · 위↓아래로 직접 바꿉니다 (거리 자동정렬 없음)
+      ${issueCount ? `<div class="badge-bad" style="margin:4px 0">${issueCount}곳 방문 어려움 · 대체/제외 권장</div>` : '<div class="badge-ok" style="margin:4px 0">모두 방문 가능</div>'}
+      ${rows}
+      <div style="margin-top:6px;color:${routeReady?'#2ED573':'#A8B0BC'};font-weight:700">
+        ${routeReady ? '길찾기 준비됨 · 내가 정한 순서' : '순서를 정한 뒤 길찾기'}
+      </div>
+    </div>
+    ${issueCardsHtml()}`;
+}
+
+function bindTimingAndRoute() {
+  document.querySelectorAll('[data-replace]').forEach(btn => {
+    btn.onclick = () => {
+      const name = btn.dataset.replace;
+      const idx = route.findIndex(p => p.name === name);
+      if (idx > 0) {
+        route[idx] = { ...ALT_GALLERY };
+        routeReady = false;
+        setHint(`${ALT_GALLERY.name}(으)로 바꿨어요`);
+        drawRoute();
+        renderSheet();
+      }
+    };
+  });
+  document.querySelectorAll('[data-skip]').forEach(btn => {
+    btn.onclick = () => {
+      const name = btn.dataset.skip;
+      if (route.length <= 2) return;
+      route = route.filter(p => p.name !== name);
+      routeReady = false;
+      setHint('경로에서 빼었어요');
+      drawRoute();
+      renderSheet();
+    };
+  });
+  document.querySelectorAll('.mv').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const from = Number(btn.dataset.idx);
+      const delta = Number(btn.dataset.move);
+      if (from <= 0) return;
+      const to = Math.max(1, Math.min(route.length - 1, from + delta));
+      if (to === from) return;
+      const item = route.splice(from, 1)[0];
+      route.splice(to, 0, item);
+      routeReady = false;
+      weekendSaved = false;
+      drawRoute();
+      setHint('순서를 바꿨어요. 길찾기로 다시 확인해 주세요.');
+      renderSheet();
+    };
+  });
+  document.querySelectorAll('.rm').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const idx = Number(btn.dataset.rm);
+      if (idx <= 0 || route.length <= 2) return;
+      route.splice(idx, 1);
+      routeReady = false;
+      weekendSaved = false;
+      drawRoute();
+      renderSheet();
+    };
+  });
+}
+
+function nearbyHtml(anchor) {
+  const buckets = nearbyFor(anchor);
+  window.__nearbyBuckets = buckets;
+  const sections = [
+    ['주변 맛집', buckets.food, (companion==='family' && FAMILY.hasChild) ? '등록 가족·아이 동반 · 유모차·아기의자 가능 우선' : ''],
+    ['주변 볼거리', buckets.sights, ''],
+    ['추천 장소', buckets.recommended, ''],
+  ];
+  return sections.map(([title, items, kidHint]) => `
+    <div class="sec">${title} <span style="color:#A8B0BC;font-weight:500;font-size:12px">· ${anchor.name} 기준</span>${kidHint ? `<span class="hint-kid">${kidHint}</span>` : ''}</div>
+    ${items.map((p,i) => {
+      const on = isOnRoute(p.name);
+      return `
+      <div class="row nearby" data-kind="${title}" data-idx="${i}">
+        <div class="thumb"><img src="${p.photo}" alt="" /></div>
+        <div style="min-width:0;flex:1">
+          <h3>${p.name}</h3>
+          <p>${p.address}</p>
+          ${p.amenity ? `<p class="amenity">${p.amenity}</p>` : ''}
+        </div>
+        <span class="act ${on?'del':''}">${on ? '경로 삭제' : '경로 추가'}</span>
+      </div>`;
+    }).join('')}
+  `).join('');
+}
+
+function bindNearbyClicks() {
+  document.querySelectorAll('.row.nearby').forEach(row => {
+    row.onclick = () => {
+      const kind = row.dataset.kind;
+      const idx = Number(row.dataset.idx);
+      const buckets = window.__nearbyBuckets || nearbyFor(focus || pending);
+      const pool = kind.includes('맛') ? buckets.food : (kind.includes('볼') ? buckets.sights : buckets.recommended);
+      const p = pool[idx];
+      if (!p) return;
+      if (isOnRoute(p.name)) {
+        route = route.filter(r => r.name !== p.name);
+        if (route.length < 1) route = [HOME];
+      } else {
+        if (route.length <= 1) route = [HOME, p];
+        else route.splice(route.length - 1, 0, p);
+      }
+      routeReady = false;
+      drawRoute();
+      renderSheet();
+    };
+  });
+}
+
+function selectPlace(p) {
+  // 새 도착지로 교체 (기존 도착은 덮어씀) — 앱과 동일 흐름
+  if (route.length <= 1) route = [HOME, p];
+  else route[route.length - 1] = p;
+  pending = p;
+  focus = p;
+  routeReady = false;
+  weekendSaved = false;
+  resultLayer.clearLayers();
+  document.getElementById('q').value = '';
+  lastResults = [];
+  drawRoute();
+  setHint('코스에 넣음 · 종료할지 더 추가할지 고르세요');
+  renderSheet();
+}
+
+function confirmEnd() {
+  pending = null;
+  routeReady = true;
+  setHint('코스 확정 · 길찾기 준비됨');
+  renderSheet();
+}
+
+function confirmContinue() {
+  pending = null;
+  setHint('주변 맛집·볼거리를 추가하거나 다시 검색하세요');
+  renderSheet();
+}
+
+function renderSheet() {
+  const list = document.getElementById('list');
+  const title = document.getElementById('sheetTitle');
+  const meta = document.getElementById('sheetMeta');
+  const q = document.getElementById('q').value.trim();
+
+  if (pending) {
+    title.textContent = '코스 확인';
+    meta.textContent = '여기서 끝낼지, 다음 장소를 더할지 고르세요';
+    list.innerHTML = `
+      <div class="decision">
+        <h3>「${pending.name}」을(를) 코스에 넣었어요</h3>
+        <p>여기서 여행을 끝낼까요, 아니면 다음 경로를 더 추가할까요?</p>
+        <div class="btns">
+          <button class="end" id="btnEnd">여기서 종료</button>
+          <button class="more" id="btnMore">다음 경로 추가</button>
+        </div>
+      </div>
+      ${nearbyHtml(pending)}
+    `;
+    document.getElementById('btnEnd').onclick = confirmEnd;
+    document.getElementById('btnMore').onclick = confirmContinue;
+    bindNearbyClicks();
+    updateCta();
+    return;
+  }
+
+  if (q && lastResults.length) {
+    title.textContent = '검색 결과';
+    meta.textContent = `국토교통부 브이월드 · ${lastResults.length}건`;
+    // 검색 중에는 주변 추천을 숨김 — 선택(목적지) 확정 후에만 그 주변으로 보여줌
+    list.innerHTML = lastResults.map((p,i) => `
+      <div class="row search" data-idx="${i}">
+        <div class="thumb"><img src="places/museum.jpg" alt="" /></div>
+        <div style="min-width:0;flex:1">
+          <h3>${p.name}</h3>
+          <p>${p.address || ''}</p>
+        </div>
+        <span class="act">코스에 넣기</span>
+      </div>
+    `).join('');
+    list.querySelectorAll('.row.search').forEach(row => {
+      row.onclick = () => {
+        const p = lastResults[Number(row.dataset.idx)];
+        if (p) selectPlace(p);
+      };
+    });
+    updateCta();
+    return;
+  }
+
+  title.textContent = focus ? '가족님을 위한 제안' : '검색 전';
+  meta.textContent = focus
+    ? `${focus.name} 주변 추천`
+    : '장소를 검색하면 브이월드 결과가 표시됩니다';
+
+  list.innerHTML = (focus || route.length >= 2 ? prefsSummaryHtml() + routeEditorHtml() : prefsSummaryHtml()) +
+    (focus ? nearbyHtml(focus) : `
+    <div class="sec">자주 가는 곳</div>
+    <div class="row" id="freqMuseum">
+      <div class="thumb"><img src="places/museum.jpg" alt="" /></div>
+      <div style="min-width:0;flex:1"><h3>국립중앙박물관</h3><p>용산구</p></div>
+      <span class="act blue">선택</span>
+    </div>
+  `);
+  const freq = document.getElementById('freqMuseum');
+  if (freq) {
+    freq.onclick = () => selectPlace({ name:'국립중앙박물관', address:'서울 용산구 서빙고로 137', lat:37.52386, lng:126.98047, closedMon:true });
+  }
+  const prefsBar = document.getElementById('prefsBar');
+  if (prefsBar) prefsBar.onclick = () => { prefsReady = false; renderPrefsStep(); };
+  bindTimingAndRoute();
+  bindNearbyClicks();
+  updateCta();
+  renderPrefsStep();
+}
+
+function vworldSearch(query) {
+  return new Promise((resolve, reject) => {
+    if (!KEY) {
+      reject(new Error('no key'));
+      return;
+    }
+    const cb = 'peyyaVworld_' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('timeout'));
+    }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (_) {}
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cb] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('script error'));
+    };
+    script.src = 'https://api.vworld.kr/req/search'
+      + '?service=search&request=search&version=2.0&crs=EPSG:4326'
+      + '&bbox=' + encodeURIComponent(METRO_BBOX)
+      + '&size=10&page=1&type=place&format=json&errorformat=json'
+      + '&callback=' + cb
+      + '&key=' + encodeURIComponent(KEY)
+      + '&query=' + encodeURIComponent(query);
+    document.body.appendChild(script);
+  });
+}
+
+function vworldSearchNationwide(query) {
+  return new Promise((resolve, reject) => {
+    if (!KEY) { reject(new Error('no key')); return; }
+    const cb = 'peyyaVworldN_' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (_) {}
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); reject(new Error('script error')); };
+    script.src = 'https://api.vworld.kr/req/search'
+      + '?service=search&request=search&version=2.0&crs=EPSG:4326&size=12&page=1'
+      + '&type=place&format=json&errorformat=json'
+      + '&callback=' + cb
+      + '&key=' + encodeURIComponent(KEY)
+      + '&query=' + encodeURIComponent(query);
+    document.body.appendChild(script);
+  });
+}
+
+function parseItems(data) {
+  try {
+    if (!data || !data.response || data.response.status !== 'OK') return [];
+    const items = data.response.result.items || [];
+    return items.map((it) => {
+      const title = String(it.title || '').replace(/<[^>]+>/g, '');
+      const road = (it.address && it.address.road) || '';
+      const parcel = (it.address && it.address.parcel) || '';
+      return {
+        name: title,
+        address: road || parcel || '국토부 공간정보',
+        lat: Number(it.point.y),
+        lng: Number(it.point.x),
+      };
+    }).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  } catch (_) {
+    return [];
+  }
+}
+
+let searchTimer = null;
+const input = document.getElementById('q');
+input.addEventListener('input', () => {
+  const q = input.value.trim();
+  clearTimeout(searchTimer);
+  if (!q) {
+    resultLayer.clearLayers();
+    lastResults = [];
+    drawRoute();
+    setHint('국토교통부 브이월드 지도 · 검색어를 입력하세요');
+    renderSheet();
+    return;
+  }
+  if (pending) return; // 확인 중에는 검색 무시
+  document.getElementById('sheetTitle').textContent = '검색 중…';
+  document.getElementById('sheetMeta').textContent = '브이월드 API 조회';
+  document.getElementById('list').innerHTML = '';
+  setHint('브이월드 검색 중…');
+  searchTimer = setTimeout(async () => {
+    try {
+      let items = localizeResults(parseItems(await vworldSearch(q)), q);
+      if (!items.length) {
+        items = localizeResults(parseItems(await vworldSearchNationwide(q)), q);
+      }
+      lastResults = items;
+      setHint(items.length ? '검색 영역을 상세 확대로 표시했습니다' : '결과 없음 · 다른 키워드');
+      drawSearchMarkers(items);
+      renderSheet();
+    } catch (e) {
+      document.getElementById('sheetTitle').textContent = '검색 실패';
+      document.getElementById('sheetMeta').textContent = String(e.message || e);
+      setHint('브이월드 검색 실패', true);
+    }
+  }, 320);
+});
+
+document.getElementById('cta').onclick = () => {
+  if (pending) return;
+  if (!routeReady && route.length >= 2) {
+    routeReady = true;
+    setHint('길찾기 완료 · 내가 정한 순서 그대로');
+    renderSheet();
+    return;
+  }
+  if (routeReady && timing === 'weekend') {
+    weekendSaved = true;
+    setHint('주말 계획으로 저장했어요');
+    renderSheet();
+    return;
+  }
+  if (routeReady) {
+    if (window.peyyaPreview) window.peyyaPreview.go('phone-execute.html');
+    else location.href = 'phone-execute.html';
+  }
+};
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+  };
+});
+
+focus = route[route.length - 1];
+drawRoute();
+renderSheet();
+window.addEventListener('resize', () => {
+  try { map.invalidateSize(); } catch (_) {}
+});
+</script>
+<script src="preview-embed.js"></script>
+</body>
+</html>

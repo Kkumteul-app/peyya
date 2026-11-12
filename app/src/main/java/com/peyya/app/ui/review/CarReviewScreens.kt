@@ -86,14 +86,14 @@ private fun CarReviewIntro(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
-            "오늘 루트 완료",
+            "알림 · 페이야",
             color = CarBrandLight,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(14.dp))
         Text(
-            "오늘 하루는\n어땠나요?",
+            "오늘 루트가\n끝났어요",
             color = CarText,
             fontSize = 40.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -101,7 +101,7 @@ private fun CarReviewIntro(
         )
         Spacer(Modifier.height(20.dp))
         Text(
-            "방문한 장소마다 별점과 짧은 글을 남겨 주세요.\n운전이 끝난 뒤이므로 한 화면에서 한 가지만 고릅니다.",
+            "알림으로도 안내했어요. 방문한 장소마다 별점과 짧은 글을 남겨 주세요.",
             color = CarTextSub,
             fontSize = 20.sp,
             lineHeight = 28.sp,
@@ -112,7 +112,7 @@ private fun CarReviewIntro(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             PrimaryCta(
-                label = "리뷰 시작",
+                label = "별점·후기 작성",
                 enabled = true,
                 onClick = onBegin,
                 modifier = Modifier.weight(2f),

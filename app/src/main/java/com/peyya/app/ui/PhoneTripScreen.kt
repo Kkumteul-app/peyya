@@ -4,17 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.peyya.app.data.TripThemeAnalyzer
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
 import com.peyya.app.progress.SnoozeChoice
@@ -51,9 +50,9 @@ import com.peyya.app.ui.adapt.AdaptSuggestionPanel
 import com.peyya.app.ui.adapt.AdaptUiVisibility
 import com.peyya.app.ui.booking.BookingPrepSection
 import com.peyya.app.ui.booking.BookingUiVisibility
+import com.peyya.app.ui.tips.DestinationTipsCard
 import com.peyya.app.ui.components.ArrivalConfirmBanner
 import com.peyya.app.ui.components.DemoBadge
-import com.peyya.app.ui.components.FamilyChips
 import com.peyya.app.ui.components.IgnitionReminderActions
 import com.peyya.app.ui.components.IgnitionReminderCard
 import com.peyya.app.ui.components.PrimaryCta
@@ -71,6 +70,7 @@ import com.peyya.app.ui.theme.PeyyaDanger
 import com.peyya.app.ui.theme.PeyyaInk
 import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
+import com.peyya.app.ui.theme.PeyyaSpace
 import com.peyya.app.ui.voice.EditLockHint
 import com.peyya.app.ui.voice.VoiceSimChips
 import com.peyya.app.ui.voice.VoiceUiVisibility
@@ -83,6 +83,7 @@ fun PhoneTripScreen(
     onStartRoute: () -> Unit,
     onMarkArrived: () -> Unit,
     onIgnition: () -> Unit,
+    onReplayGuideSpeech: () -> Unit = {},
     onConfirmNext: () -> Unit,
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
@@ -95,6 +96,7 @@ fun PhoneTripScreen(
     onAcceptAdapt: (String) -> Unit = {},
     onDismissAdapt: () -> Unit = {},
     onSimulateVoice: (String) -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -102,7 +104,10 @@ fun PhoneTripScreen(
     val (title, subtitle) = heroCopy(state)
     val selected = state.trip.selectedStops()
     val done = doneCount(state)
-    val showVoice = state.phase is TripPhase.AwaitingNext && state.lastSpoken.isNotBlank()
+    val showVoice = state.lastSpoken.isNotBlank() &&
+        (state.phase is TripPhase.Navigating ||
+            state.phase is TripPhase.AwaitingNext ||
+            state.phase is TripPhase.Arrived)
     val nextPreview = nextStopAfterArrived(state)
     val arrivedStop = currentStop(state)
     val doneIds = when (val p = state.phase) {
@@ -128,13 +133,21 @@ fun PhoneTripScreen(
         if (!state.ignitionPromptVisible) showSnooze = false
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(PeyyaCanvas)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+                .padding(
+                    start = PeyyaSpace.screenGutter,
+                    end = PeyyaSpace.screenGutter,
+                    top = PeyyaSpace.sm,
+                    bottom = PeyyaSpace.xs,
+                ),
         ) {
             PhoneTopBar(
                 mockMode = state.mockMode,
@@ -152,7 +165,7 @@ fun PhoneTripScreen(
                 },
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(PeyyaSpace.md))
 
             if (state.showsReviewOrCourseUi()) {
                 PhoneReviewOrCourseOverlay(
@@ -171,6 +184,7 @@ fun PhoneTripScreen(
                     } else {
                         NowCard(
                             phaseLabel = "${state.phase.labelKo()} · $done / ${selected.size}",
+                            etaLabel = nowCardEtaLabel(state),
                             title = title,
                             subtitle = subtitle,
                             nextName = nextPreview?.name,
@@ -180,7 +194,7 @@ fun PhoneTripScreen(
                                 listOfNotNull(shortAddress(next.address), dist).joinToString(" · ")
                             },
                             spoken = if (showVoice) state.lastSpoken else null,
-                            onReplay = onIgnition,
+                            onReplay = onReplayGuideSpeech,
                         )
                     }
 
@@ -204,12 +218,22 @@ fun PhoneTripScreen(
 
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        state.trip.title,
+                        "오늘의 계획",
                         color = PeyyaInkDim,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.trip.title.ifBlank {
+                            TripThemeAnalyzer.themeSentence(selected, state.planMap.companion)
+                        },
+                        color = PeyyaInk,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 20.sp,
+                    )
+                    Spacer(Modifier.height(10.dp))
                     if (state.phase is TripPhase.Idle) {
                         state.trip.stops.forEach { stop ->
                             StopSelectRow(
@@ -244,8 +268,21 @@ fun PhoneTripScreen(
                                 caption = caption,
                                 state = stopState,
                                 isLast = index == selected.lastIndex,
+                                etaLabel = TripThemeAnalyzer.etaIntoStop(selected, index)?.combined,
                             )
                         }
+                    }
+
+                    // 안내 중·다음 제안: 가는 길에 볼거리·주차 팁을 미리 확인
+                    val tipStop = when (val p = state.phase) {
+                        is TripPhase.Navigating -> state.trip.stops.firstOrNull { it.id == p.stopId }
+                        is TripPhase.AwaitingNext -> state.trip.stops.firstOrNull { it.id == p.nextStopId }
+                        is TripPhase.Arrived -> nextPreview
+                        else -> null
+                    }
+                    if (tipStop != null) {
+                        Spacer(Modifier.height(16.dp))
+                        DestinationTipsCard(stop = tipStop, carMode = false)
                     }
 
                     val bookingStops = BookingUiVisibility.visibleBookingStops(
@@ -272,52 +309,43 @@ fun PhoneTripScreen(
                         Spacer(Modifier.height(16.dp))
                         VoiceSimChips(carMode = false, onSimulate = onSimulateVoice)
                     }
-
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        state.family.familyName,
-                        color = PeyyaInkDim,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    FamilyChips(state.family.members)
                 }
 
-                if (state.ignitionPromptVisible) {
-                    IgnitionReminderActions(
-                        onStartDriving = onStartRoute,
-                        onSnoozeLater = { showSnooze = true },
-                        onSkipToday = onSkipToday,
-                        startEnabled = selected.isNotEmpty(),
-                        carMode = false,
-                    )
-                } else {
-                    val primaryLabel = actions.primaryLabel
-                    if (primaryLabel != null) {
-                        PrimaryCta(
-                            label = primaryLabel,
-                            enabled = actions.primaryEnabled,
-                            onClick = actions.onPrimary,
-                            demo = actions.primaryIsDemo,
+                PhoneActionDock {
+                    if (state.ignitionPromptVisible) {
+                        IgnitionReminderActions(
+                            onStartDriving = onStartRoute,
+                            onSnoozeLater = { showSnooze = true },
+                            onSkipToday = onSkipToday,
+                            startEnabled = selected.isNotEmpty(),
+                            carMode = false,
                         )
-                    }
-                    if (actions.secondaryLabel != null && actions.onSecondary != null) {
-                        Spacer(Modifier.height(4.dp))
-                        SecondaryCta(actions.secondaryLabel, actions.onSecondary)
-                    }
-                    if (primaryLabel == null &&
-                        actions.secondaryLabel == null &&
-                        state.phase is TripPhase.Arrived
-                    ) {
-                        Text(
-                            "다음 제안 대기 중 · 지금은 눌러야 할 버튼이 없어요",
-                            color = PeyyaInkDim,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                        )
+                    } else {
+                        val primaryLabel = actions.primaryLabel
+                        if (primaryLabel != null) {
+                            PrimaryCta(
+                                label = primaryLabel,
+                                enabled = actions.primaryEnabled,
+                                onClick = actions.onPrimary,
+                                demo = actions.primaryIsDemo,
+                            )
+                        }
+                        if (actions.secondaryLabel != null && actions.onSecondary != null) {
+                            SecondaryCta(actions.secondaryLabel, actions.onSecondary)
+                        }
+                        if (primaryLabel == null &&
+                            actions.secondaryLabel == null &&
+                            state.phase is TripPhase.Arrived
+                        ) {
+                            Text(
+                                "다음 제안 대기 중 · 지금은 눌러야 할 버튼이 없어요",
+                                color = PeyyaInkDim,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 }
             }
@@ -418,6 +446,7 @@ private fun PhoneTopBar(
 @Composable
 private fun NowCard(
     phaseLabel: String,
+    etaLabel: String? = null,
     title: String,
     subtitle: String,
     nextName: String?,
@@ -433,12 +462,26 @@ private fun NowCard(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(
-            phaseLabel,
-            color = Color.White.copy(alpha = 0.9f),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                phaseLabel,
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            if (!etaLabel.isNullOrBlank()) {
+                Text(
+                    etaLabel,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
+        }
         Column {
             Text(
                 title,

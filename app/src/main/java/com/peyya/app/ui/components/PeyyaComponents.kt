@@ -136,11 +136,13 @@ fun StopTimelineRow(
     caption: String,
     state: StopState,
     isLast: Boolean,
+    etaLabel: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.Top,
     ) {
         Column(
             modifier = Modifier.width(28.dp),
@@ -160,7 +162,11 @@ fun StopTimelineRow(
             }
         }
         Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.padding(bottom = 12.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 12.dp),
+        ) {
             Text(
                 name,
                 color = if (state == StopState.Done) PeyyaInkDim else PeyyaInk,
@@ -168,6 +174,15 @@ fun StopTimelineRow(
                 fontWeight = FontWeight.Bold,
             )
             Text(caption, color = PeyyaInkDim, fontSize = 13.sp)
+        }
+        if (!etaLabel.isNullOrBlank() && state != StopState.Done) {
+            Text(
+                etaLabel,
+                color = if (state == StopState.Current) PeyyaBrand else PeyyaInkDim,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp, start = 8.dp),
+            )
         }
     }
 }
@@ -260,11 +275,13 @@ fun CarStopTimelineRow(
     caption: String,
     state: StopState,
     isLast: Boolean,
+    etaLabel: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.Top,
     ) {
         Column(
             modifier = Modifier.width(40.dp),
@@ -282,7 +299,11 @@ fun CarStopTimelineRow(
             }
         }
         Spacer(Modifier.width(18.dp))
-        Column(modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 4.dp, bottom = 20.dp),
+        ) {
             Text(
                 name,
                 color = if (state == StopState.Done) CarTextSub else CarText,
@@ -299,6 +320,15 @@ fun CarStopTimelineRow(
                 },
                 fontSize = 18.sp,
                 fontWeight = if (state == StopState.Current) FontWeight.Bold else FontWeight.Normal,
+            )
+        }
+        if (!etaLabel.isNullOrBlank() && state != StopState.Done) {
+            Text(
+                etaLabel,
+                color = if (state == StopState.Current) CarBrandLight else CarDim,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 6.dp, start = 12.dp),
             )
         }
     }

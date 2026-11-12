@@ -26,10 +26,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.peyya.app.domain.TripPhase
 import com.peyya.app.review.ActiveReviewUi
 import com.peyya.app.review.CourseCandidate
 import com.peyya.app.review.ReviewUiStep
+import com.peyya.app.ui.PhoneActionDock
 import com.peyya.app.ui.components.PrimaryCta
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopState
@@ -41,6 +41,7 @@ import com.peyya.app.ui.theme.PeyyaInkDim
 import com.peyya.app.ui.theme.PeyyaInkSub
 import com.peyya.app.ui.theme.PeyyaLine
 import com.peyya.app.ui.theme.PeyyaSoft
+import com.peyya.app.ui.theme.PeyyaSpace
 import com.peyya.app.viewmodel.TripUiState
 
 @Composable
@@ -74,12 +75,6 @@ fun PhoneReviewOrCourseOverlay(
                 modifier = modifier,
             )
         }
-        state.courseOffer != null && state.phase is TripPhase.Idle -> PhoneCourseRecommend(
-            candidate = state.courseOffer,
-            onApply = callbacks.onApplyCourse,
-            onDismiss = callbacks.onDismissCourse,
-            modifier = modifier,
-        )
     }
 }
 
@@ -96,14 +91,13 @@ private fun PhoneReviewIntro(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            QuietHeroCard(
-                kicker = "오늘 루트 완료",
-                title = "오늘 하루는\n어땠나요?",
-                body = "다녀온 장소마다 별점과 짧은 글을 남겨 주세요. 다음에 비슷한 코스를 고르는 데 쓰여요.",
+            ReviewInviteNotificationCard(
+                tripTitle = review.tripTitle,
+                stopCount = review.stops.size,
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                review.tripTitle,
+                "다녀온 장소",
                 color = PeyyaInkDim,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
@@ -119,8 +113,51 @@ private fun PhoneReviewIntro(
                 )
             }
         }
-        PrimaryCta(label = "리뷰 시작", enabled = true, onClick = onBegin)
-        SoftCta(label = "나중에", onClick = onSkip)
+        PhoneActionDock {
+            PrimaryCta(label = "별점·후기 작성", enabled = true, onClick = onBegin)
+            SoftCta(label = "나중에", onClick = onSkip)
+        }
+    }
+}
+
+@Composable
+private fun ReviewInviteNotificationCard(
+    tripTitle: String,
+    stopCount: Int,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(PeyyaSoft)
+            .padding(PeyyaSpace.lg),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("알림 · 페이야", color = PeyyaBrand, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(
+            "오늘 루트가 끝났어요",
+            color = PeyyaInk,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 32.sp,
+            letterSpacing = (-0.3).sp,
+        )
+        Text(
+            tripTitle,
+            color = PeyyaInkSub,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            if (stopCount > 0) {
+                "${stopCount}곳을 다녀왔어요. 장소마다 별점과 한 줄 후기를 남겨 주세요."
+            } else {
+                "별점과 한 줄 후기를 남겨 주세요."
+            },
+            color = PeyyaInkSub,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+        )
     }
 }
 
@@ -177,12 +214,14 @@ private fun PhoneStopRating(
                 placeholder = "짧게 남겨 주세요",
             )
         }
-        PrimaryCta(
-            label = primaryLabel,
-            enabled = review.draftStars in 1..5,
-            onClick = onCommit,
-        )
-        SecondaryCta(label = "이 장소 건너뛰기", onClick = onSkipStop)
+        PhoneActionDock {
+            PrimaryCta(
+                label = primaryLabel,
+                enabled = review.draftStars in 1..5,
+                onClick = onCommit,
+            )
+            SecondaryCta(label = "이 장소 건너뛰기", onClick = onSkipStop)
+        }
     }
 }
 
@@ -198,33 +237,9 @@ private fun PhoneReviewSubmitted(
             body = "다음에 Idle에서 코스 추천에 반영될 수 있어요.",
         )
         Spacer(Modifier.weight(1f))
-        PrimaryCta(label = "확인", enabled = true, onClick = onDone)
-    }
-}
-
-@Composable
-fun PhoneCourseRecommend(
-    candidate: CourseCandidate,
-    onApply: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            QuietHeroCard(
-                kicker = "Idle · 추천 가능",
-                title = "지난 리뷰를 바탕으로\n코스를 골랐어요",
-                body = "완료 루트 3회 이상 · 장소 리뷰 5건 이상일 때만 보여요.",
-            )
-            Spacer(Modifier.height(14.dp))
-            CourseCard(candidate = candidate)
+        PhoneActionDock {
+            PrimaryCta(label = "확인", enabled = true, onClick = onDone)
         }
-        PrimaryCta(label = "이 코스로", enabled = true, onClick = onApply)
-        SoftCta(label = "닫기", onClick = onDismiss)
     }
 }
 
@@ -240,7 +255,9 @@ private fun PhoneCourseAppliedConfirm(
             body = "경유지가 반영되었습니다. 운전 시작으로 바로 갈 수 있어요.",
         )
         Spacer(Modifier.weight(1f))
-        PrimaryCta(label = "확인", enabled = true, onClick = onConfirm)
+        PhoneActionDock {
+            PrimaryCta(label = "확인", enabled = true, onClick = onConfirm)
+        }
     }
 }
 
@@ -255,8 +272,8 @@ fun QuietHeroCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(PeyyaSoft)
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(PeyyaSpace.lg),
+        verticalArrangement = Arrangement.spacedBy(PeyyaSpace.sm),
     ) {
         Text(kicker, color = PeyyaBrand, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Text(

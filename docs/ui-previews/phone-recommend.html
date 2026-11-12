@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Peyya — 추천</title>
+<script>if(/[?&]embed=1(?:&|$)/.test(location.search))document.documentElement.classList.add('embed');</script>
+<link rel="stylesheet" href="nav-icons.css" />
+<style>
+  :root {
+    --brand: #2F6BFF;
+    --ink: #1A1A1A;
+    --ink-sub: #3D434D;
+    --ink-dim: #5B6270;
+    --soft: #F1F3F6;
+    --line: #D9DDE3;
+    --star: #E6A700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 16px 48px;
+    font-family: "Pretendard","Noto Sans KR",system-ui,sans-serif;
+    background: #E6EAF0; color: var(--ink);
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--ink-dim); font-size: 13px; margin: 0 0 14px; }
+  .phone {
+    width: 390px; height: 844px; margin: 0 auto; border-radius: 36px; overflow: hidden;
+    border: 1px solid #C8CED8; background: #fff; display: flex; flex-direction: column;
+    box-shadow: 0 18px 40px rgba(26, 40, 70, .12);
+  }
+  .status {
+    height: 44px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 700;
+  }
+  .body { flex: 1; overflow: auto; padding: 8px 20px 16px; }
+  .title { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+  .desc { font-size: 14px; color: var(--ink-sub); margin: 0 0 14px; line-height: 1.4; }
+  .card { background: var(--soft); border-radius: 20px; overflow: hidden; margin-bottom: 14px; }
+  .card img.cover { width: 100%; height: 190px; object-fit: cover; display: block; }
+  .card .pad { padding: 14px 16px 16px; }
+  .meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: rgba(47,107,255,.15);
+    display: grid; place-items: center; color: var(--brand); font-weight: 700; font-size: 14px;
+  }
+  .stars { color: var(--star); font-size: 14px; letter-spacing: 1px; }
+  .place { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+  .place-meta { font-size: 13px; color: var(--ink-dim); margin: 0 0 8px; }
+  .comment { font-size: 14px; color: var(--ink-sub); line-height: 1.45; margin: 0; }
+  html.embed, html.embed body {
+    width: 100%; height: 100%; margin: 0; padding: 0; background: #fff; overflow: hidden;
+  }
+  html.embed h1, html.embed .sub { display: none !important; }
+  html.embed .phone {
+    width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Peyya — 추천</h1>
+  <p class="sub">다녀온 사람들의 별점·후기로 다음 장소를 고릅니다.</p>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>LTE</span></div>
+    <div class="body">
+      <div class="title">추천</div>
+      <p class="desc">다녀온 사람들의 사진과 별점으로 다음 장소를 골라 보세요.</p>
+      <div class="card">
+        <img class="cover" src="places/museum.jpg" alt="" />
+        <div class="pad">
+          <div class="meta">
+            <div class="avatar">이</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px">이서연</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">가족과 함께</div>
+            </div>
+            <div class="stars">★★★★★</div>
+          </div>
+          <div class="place">국립중앙박물관</div>
+          <p class="place-meta">용산 · 문화 · 지난 주말</p>
+          <p class="comment">아이랑 특별전이 딱이었어요. 다음엔 점심까지 이어서 잡으려요.</p>
+        </div>
+      </div>
+      <div class="card">
+        <img class="cover" src="places/food.jpg" alt="" />
+        <div class="pad">
+          <div class="meta">
+            <div class="avatar">박</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px">박준호</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink-dim)">연인과 함께</div>
+            </div>
+            <div class="stars">★★★★☆</div>
+          </div>
+          <div class="place">용산 한식 담소</div>
+          <p class="place-meta">식사 · 박물관 인근 · 2주 전</p>
+          <p class="comment">대기 짧고 반찬이 정갈해요. 연인이랑 오기 좋은 온도.</p>
+        </div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a data-tab="plan" href="phone-plan-connect.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-5.5-5.5L9 9"/><path d="M4 14.5h11a5 5 0 0 0 0-10H9"/></svg>계획
+      </a>
+      <a data-tab="execute" href="phone-execute.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14v2H5z"/><path d="M7 17l1.5-5h7L17 17"/><circle cx="8.5" cy="19.5" r="1.2"/><circle cx="15.5" cy="19.5" r="1.2"/><path d="M8 9h8l1 3H7z"/></svg>실행
+      </a>
+      <a class="on" href="#">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.5-3.5"/><path d="M11 8v6M8 11h6"/></svg>추천
+      </a>
+      <a data-tab="my" href="phone-my.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c1.5-3.2 4-4.8 6.5-4.8S16.5 15.8 18.5 19"/></svg>마이
+      </a>
+    </nav>
+  </div>
+<script src="preview-embed.js"></script>
+</body>
+</html>
