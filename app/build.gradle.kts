@@ -12,13 +12,26 @@ android {
         applicationId = "com.peyya.app"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 5
+        versionName = "0.1.4"
+    }
+
+    // Phone install requires a signed APK. Unsigned release shows "패키지가 잘못됨".
+    // Contest sideload uses the local debug keystore (replace with release keystore later).
+    signingConfigs {
+        create("sideload") {
+            val debugStore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storeFile = debugStore
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("sideload")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -61,9 +74,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.coil.compose)
 
     implementation(libs.pleos.navi.helper)
     implementation(libs.pleos.vehicle)
 
+    testImplementation(libs.junit)
     debugImplementation(libs.androidx.ui.tooling)
 }

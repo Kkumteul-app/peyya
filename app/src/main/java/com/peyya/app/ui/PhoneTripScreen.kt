@@ -19,13 +19,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.peyya.app.data.PeyyaImages
 import com.peyya.app.domain.TripPhase
 import com.peyya.app.domain.labelKo
+import com.peyya.app.ui.components.AdaptPanel
+import com.peyya.app.ui.components.BookingPrepCard
+import com.peyya.app.ui.components.CourseRecommendPanel
 import com.peyya.app.ui.components.FamilyAvatars
 import com.peyya.app.ui.components.MockChip
+import com.peyya.app.ui.components.PhotoHeroBanner
 import com.peyya.app.ui.components.PrimaryCta
+import com.peyya.app.ui.components.ReviewPanel
 import com.peyya.app.ui.components.SecondaryCta
 import com.peyya.app.ui.components.StopCard
+import com.peyya.app.ui.components.VoiceSimChips
 import com.peyya.app.ui.theme.PeyyaBrand
 import com.peyya.app.ui.theme.PeyyaSoft
 import com.peyya.app.viewmodel.TripUiState
@@ -40,6 +47,15 @@ fun PhoneTripScreen(
     onConfirmNext: () -> Unit,
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
+    onTogglePrep: (String) -> Unit = {},
+    onDismissAdapt: () -> Unit = {},
+    onAcceptParking: (String) -> Unit = {},
+    onVoiceChip: (String) -> Unit = {},
+    onContinueReviewIntro: () -> Unit = {},
+    onUpdateReview: (Int, String) -> Unit = { _, _ -> },
+    onNextReview: () -> Unit = {},
+    onSkipReview: () -> Unit = {},
+    onApplyCourse: (String) -> Unit = {},
 ) {
     val actions = resolveTripActions(
         state, onStartRoute, onMarkArrived, onIgnition, onConfirmNext, onSkipNext, onResetTrip,
@@ -67,7 +83,7 @@ fun PhoneTripScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+            .padding(horizontal = 18.dp, vertical = 12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -80,19 +96,30 @@ fun PhoneTripScreen(
             }
             MockChip(state.mockMode)
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Text("오늘 루트", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(state.family.familyName, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(10.dp))
+            PhotoHeroBanner(
+                imageModel = PeyyaImages.forStopId(currentId ?: state.trip.stops.firstOrNull()?.id.orEmpty()),
+                title = state.trip.title,
+                subtitle = "${state.family.familyName} · ${state.phase.labelKo()}",
+                height = 150,
+            )
+            Spacer(Modifier.height(12.dp))
             FamilyAvatars(state.family.members)
-            Spacer(Modifier.height(16.dp))
-            Text(state.trip.title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            if (state.phase is TripPhase.Idle) {
+                state.trip.stops.filter { it.needsBooking }.forEach { stop ->
+                    BookingPrepCard(stop, state.prepChecked, onTogglePrep)
+                    Spacer(Modifier.height(10.dp))
+                }
+                CourseRecommendPanel(state.courseCandidates, onApplyCourse)
+                Spacer(Modifier.height(10.dp))
+            }
+            Text("오늘 루트", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(10.dp))
             state.trip.stops.forEachIndexed { index, stop ->
                 StopCard(
@@ -106,6 +133,29 @@ fun PhoneTripScreen(
                 )
                 Spacer(Modifier.height(10.dp))
             }
+            if (state.phase is TripPhase.Arrived) {
+                AdaptPanel(
+                    suggestions = state.adaptSuggestions,
+                    dismissed = state.adaptDismissed,
+                    onDismiss = onDismissAdapt,
+                    onAcceptParking = onAcceptParking,
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+            if (state.phase is TripPhase.AwaitingNext || state.phase is TripPhase.Arrived) {
+                VoiceSimChips(onVoiceChip)
+                Spacer(Modifier.height(10.dp))
+            }
+            ReviewPanel(
+                phase = state.reviewPhase,
+                drafts = state.reviewDrafts,
+                index = state.reviewIndex,
+                onContinueIntro = onContinueReviewIntro,
+                onUpdate = onUpdateReview,
+                onNext = onNextReview,
+                onSkip = onSkipReview,
+            )
+            Spacer(Modifier.height(10.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -125,14 +175,19 @@ fun PhoneTripScreen(
             Text(state.statusMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.height(12.dp))
-        PrimaryCta(actions.primaryLabel, actions.primaryEnabled, actions.onPrimary)
+        PrimaryCta(actions.primaryLabel, actions.primaryEnabled, onClick = actions.onPrimary)
         if (actions.secondaryLabel != null && actions.onSecondary != null) {
             Spacer(Modifier.height(8.dp))
-            SecondaryCta(actions.secondaryLabel, actions.secondaryEnabled, actions.onSecondary)
+            SecondaryCta(actions.secondaryLabel, actions.secondaryEnabled, onClick = actions.onSecondary)
         }
         if (actions.tertiaryLabel != null && actions.onTertiary != null) {
             Spacer(Modifier.height(8.dp))
-            SecondaryCta(actions.tertiaryLabel, actions.tertiaryEnabled, actions.onTertiary, outlined = false)
+            SecondaryCta(
+                actions.tertiaryLabel,
+                actions.tertiaryEnabled,
+                outlined = false,
+                onClick = actions.onTertiary,
+            )
         }
     }
 }

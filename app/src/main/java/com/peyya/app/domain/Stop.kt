@@ -9,4 +9,7 @@ data class Stop(
     val poiId: String,
     val poiSubId: String = "0",
     val selected: Boolean = true,
+    val needsBooking: Boolean = false,
+    val bookingUrl: String? = null,
+    val prepChecklist: List<String> = emptyList(),
 )

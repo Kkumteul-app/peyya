@@ -16,10 +16,18 @@ fun TripScreen(
     onConfirmNext: () -> Unit,
     onSkipNext: () -> Unit,
     onResetTrip: () -> Unit,
+    onTogglePrep: (String) -> Unit = {},
+    onDismissAdapt: () -> Unit = {},
+    onAcceptParking: (String) -> Unit = {},
+    onVoiceChip: (String) -> Unit = {},
+    onContinueReviewIntro: () -> Unit = {},
+    onUpdateReview: (Int, String) -> Unit = { _, _ -> },
+    onNextReview: () -> Unit = {},
+    onSkipReview: () -> Unit = {},
+    onApplyCourse: (String) -> Unit = {},
 ) {
     val landscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    // Keep signature for family name edits on phone; car uses glance-only names.
     @Suppress("UNUSED_PARAMETER")
     val unusedFamilyEditor = onFamilyNameChange
 
@@ -44,6 +52,15 @@ fun TripScreen(
             onConfirmNext = onConfirmNext,
             onSkipNext = onSkipNext,
             onResetTrip = onResetTrip,
+            onTogglePrep = onTogglePrep,
+            onDismissAdapt = onDismissAdapt,
+            onAcceptParking = onAcceptParking,
+            onVoiceChip = onVoiceChip,
+            onContinueReviewIntro = onContinueReviewIntro,
+            onUpdateReview = onUpdateReview,
+            onNextReview = onNextReview,
+            onSkipReview = onSkipReview,
+            onApplyCourse = onApplyCourse,
         )
     }
 }

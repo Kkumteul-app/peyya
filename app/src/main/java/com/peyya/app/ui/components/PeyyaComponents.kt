@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,19 +68,15 @@ fun FamilyAvatars(members: List<FamilyMember>, modifier: Modifier = Modifier) {
 
 @Composable
 fun StopThumb(stopId: String, modifier: Modifier = Modifier) {
-    val brush = if (stopId.contains("museum", ignoreCase = true) || stopId == "museum") {
-        Brush.linearGradient(listOf(MuseumMid, MuseumDeep))
-    } else {
-        Brush.linearGradient(listOf(FoodMid, FoodDeep))
-    }
-    val label = if (stopId == "museum") "Museum" else "Food"
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(brush),
-        contentAlignment = Alignment.Center,
+            .clip(RoundedCornerShape(12.dp)),
     ) {
-        Text(label, color = Color.White, style = MaterialTheme.typography.labelMedium)
+        AssetPhoto(
+            model = com.peyya.app.data.PeyyaImages.forStopId(stopId),
+            modifier = Modifier.fillMaxSize(),
+            contentDescription = stopId,
+        )
     }
 }
 
@@ -133,8 +130,8 @@ fun StopCard(
 fun PrimaryCta(
     label: String,
     enabled: Boolean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit,
 ) {
     Button(
         onClick = onClick,
@@ -158,9 +155,9 @@ fun PrimaryCta(
 fun SecondaryCta(
     label: String,
     enabled: Boolean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     outlined: Boolean = true,
+    onClick: () -> Unit,
 ) {
     if (outlined) {
         OutlinedButton(

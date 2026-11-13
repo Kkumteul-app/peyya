@@ -174,22 +174,22 @@ fun CarTripScreen(
                 }
             }
             Spacer(Modifier.weight(1f))
-            PrimaryCta(actions.primaryLabel, actions.primaryEnabled, actions.onPrimary)
+            PrimaryCta(actions.primaryLabel, actions.primaryEnabled, onClick = actions.onPrimary)
             if (actions.secondaryLabel != null && actions.onSecondary != null) {
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SecondaryCta(
                         actions.secondaryLabel,
                         actions.secondaryEnabled,
-                        actions.onSecondary,
                         modifier = Modifier.weight(1f),
+                        onClick = actions.onSecondary,
                     )
                     if (actions.tertiaryLabel != null && actions.onTertiary != null) {
                         SecondaryCta(
                             actions.tertiaryLabel,
                             actions.tertiaryEnabled,
-                            actions.onTertiary,
                             modifier = Modifier.weight(1f),
+                            onClick = actions.onTertiary,
                         )
                     }
                 }
